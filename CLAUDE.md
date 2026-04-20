@@ -25,20 +25,22 @@ screenbank/
 ## Tech Stack
 
 ### Mobile (`apps/mobile`)
-- **Expo SDK 55** with New Architecture enabled
-- **Expo Router v4** — file-based routing
+
+- **Expo SDK 54** with New Architecture enabled
+- **Expo Router v3** — file-based routing
 - **React Native 0.81** with TypeScript (strict mode)
 - **NativeWind v4** — Tailwind CSS for React Native styling
 - Path alias: `@/*` → root of `apps/mobile`
 
 ### Backend (future)
+
 - **Supabase** — managed Postgres, auth, realtime, edge functions
 - **Node.js / TypeScript** for any custom API logic
 
 ## Key Concepts
 
 - **Screen Budget**: daily time limit set by the user, pulled from iOS Screen Time API (future)
-- **Tokens**: currency earned by staying under budget; 1 token per X minutes under budget (TBD)
+- **Tokens**: currency earned by staying under budget; 1 token per 1 minute under budget
 - **Causes**: real-world impact campaigns (trees, puppies, ocean cleanup, etc.) users can spend tokens on
 - **Streaks**: consecutive days under budget
 - **Social**: friends list, activity feed, leaderboard
@@ -62,10 +64,12 @@ screenbank/
 npm run mobile
 
 # Or directly
-cd apps/mobile && npx expo start
+cd apps/mobile && npm start
 ```
 
-Then scan the QR code with **Expo Go** on your iPhone, or press `i` for iOS simulator (requires full Xcode).
+Then scan the QR code with **Expo Go** on your iPhone. The `EXPO_ROUTER_APP_ROOT` env var is set in the npm scripts — always use `npm start` rather than `npx expo start` directly.
+
+> Note: iOS simulator requires full Xcode (not currently installed). Use physical device via Expo Go.
 
 ### Adding packages (always use expo install for native packages)
 

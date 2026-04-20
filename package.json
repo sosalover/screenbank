@@ -2,10 +2,6 @@
   "name": "screenbank",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "mobile": "turbo run start --filter=mobile",
     "build": "turbo run build",
