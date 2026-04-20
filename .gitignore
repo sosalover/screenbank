@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Native builds
+ios/
+android/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Turbo
+.turbo/
+
+# OS
+.DS_Store
+
+# Logs
+npm-debug.log*
+*.log
+
+# TypeScript
+*.tsbuildinfo
