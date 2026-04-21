@@ -1,10 +1,12 @@
-import { View, Text } from "react-native";
+import { View } from "react-native";
+import GameScene from "@/components/GameScene";
+import HUD from "@/components/HUD";
 
 export default function HomeScreen() {
   return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-3xl font-bold text-brand-600">ScreenBank</Text>
-      <Text className="mt-2 text-gray-500">Spend less. Earn more.</Text>
+    <View style={{ flex: 1 }}>
+      <GameScene />
+      <HUD />
     </View>
   );
 }
