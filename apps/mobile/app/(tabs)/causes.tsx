@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
   cardCharity: { fontSize: 11, color: "#16a34a", fontWeight: "600", marginBottom: 4 },
   cardImpact: { fontSize: 11, color: "#6b7280", marginBottom: 10, lineHeight: 15 },
   cardMeta: { marginBottom: 10 },
+  costRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   costText: { fontSize: 12, fontWeight: "600", color: "#374151" },
   queueBtn: {
     backgroundColor: "#16a34a",

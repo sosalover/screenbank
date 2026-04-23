@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useGame, formatTimeRemaining } from "@/store/gameStore";
 
 function formatDate(date: Date) {
@@ -21,17 +22,22 @@ export default function AccountScreen() {
       {/* Avatar */}
       <View style={styles.avatarRow}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarEmoji}>🌿</Text>
+          <Ionicons name="person-circle" size={40} color="#16a34a" />
         </View>
-        <View>
+        <View style={{ gap: 4 }}>
           <Text style={styles.name}>Alex</Text>
-          <Text style={styles.subtitle}>
-            🔥 {state.streak} day streak · ⏱ {state.minuteBalance} min saved
-          </Text>
+          <View style={styles.statRow}>
+            <Ionicons name="flame" size={13} color="#6b7280" />
+            <Text style={styles.subtitle}>{state.streak} day streak</Text>
+            <Text style={styles.dot}>·</Text>
+            <Ionicons name="timer-outline" size={13} color="#6b7280" />
+            <Text style={styles.subtitle}>{state.minuteBalance} min saved</Text>
+          </View>
           {state.algorithmRaids > 0 && (
-            <Text style={styles.raidStat}>
-              👁 The Algorithm raided {state.algorithmRaids}×
-            </Text>
+            <View style={styles.statRow}>
+              <Ionicons name="eye" size={13} color="#ef4444" />
+              <Text style={styles.raidStat}>The Algorithm raided {state.algorithmRaids}×</Text>
+            </View>
           )}
         </View>
       </View>
@@ -45,14 +51,14 @@ export default function AccountScreen() {
               key={build.id}
               style={[styles.buildRow, build.status === "delayed" && styles.buildRowDelayed]}
             >
-              <Text style={styles.buildEmoji}>{build.cause.emoji}</Text>
+              <Ionicons name={build.cause.icon as any} size={28} color={build.status === "delayed" ? "#ef4444" : "#16a34a"} />
               <View style={styles.buildInfo}>
                 <Text style={styles.buildName}>{build.cause.name}</Text>
                 <Text style={styles.buildCharity}>{build.cause.charity}</Text>
                 <Text style={[styles.buildTimer, build.status === "delayed" && styles.buildTimerDelayed]}>
                   {build.status === "delayed"
-                    ? `👁 Delayed · ${formatTimeRemaining(build.completesAt)} left`
-                    : `⏳ ${formatTimeRemaining(build.completesAt)} remaining`}
+                    ? `Delayed · ${formatTimeRemaining(build.completesAt)} left`
+                    : `${formatTimeRemaining(build.completesAt)} remaining`}
                 </Text>
               </View>
             </View>
@@ -67,9 +73,10 @@ export default function AccountScreen() {
           <Text style={styles.empty}>No completed builds yet — head to Causes to get started.</Text>
         ) : (
           Object.entries(impact).map(([name, count]) => (
-            <Text key={name} style={styles.impactText}>
-              ✅ {count}× {name}
-            </Text>
+            <View key={name} style={styles.statRow}>
+              <Ionicons name="checkmark-circle" size={15} color="#16a34a" />
+              <Text style={styles.impactText}>{count}× {name}</Text>
+            </View>
           ))
         )}
       </View>
@@ -82,7 +89,7 @@ export default function AccountScreen() {
         ) : (
           [...completedBuilds].reverse().map((build, i) => (
             <View key={i} style={styles.historyRow}>
-              <Text style={styles.historyEmoji}>{build.cause.completedEmoji}</Text>
+              <Ionicons name={build.cause.icon as any} size={28} color="#16a34a" />
               <View style={styles.historyInfo}>
                 <Text style={styles.historyName}>{build.cause.name}</Text>
                 <Text style={styles.historyCharity}>{build.cause.charity}</Text>
@@ -115,10 +122,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarEmoji: { fontSize: 32 },
   name: { fontSize: 22, fontWeight: "800", color: "#111" },
-  subtitle: { fontSize: 13, color: "#6b7280", marginTop: 2 },
-  raidStat: { fontSize: 12, color: "#ef4444", marginTop: 2 },
+  statRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  dot: { fontSize: 13, color: "#d1d5db" },
+  subtitle: { fontSize: 13, color: "#6b7280" },
+  raidStat: { fontSize: 12, color: "#ef4444" },
   section: { marginBottom: 28 },
   sectionTitle: { fontSize: 18, fontWeight: "700", color: "#111", marginBottom: 12 },
   empty: { color: "#9ca3af", fontSize: 14 },
@@ -137,13 +145,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff1f2",
     borderColor: "#fca5a5",
   },
-  buildEmoji: { fontSize: 28 },
   buildInfo: { flex: 1 },
   buildName: { fontSize: 15, fontWeight: "600", color: "#111" },
   buildCharity: { fontSize: 12, color: "#16a34a", marginTop: 1 },
   buildTimer: { fontSize: 12, color: "#6b7280", marginTop: 3 },
   buildTimerDelayed: { color: "#ef4444" },
-  impactText: { fontSize: 15, color: "#16a34a", fontWeight: "600", paddingVertical: 4 },
+  impactText: { fontSize: 15, color: "#16a34a", fontWeight: "600" },
   historyRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -158,7 +165,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
-  historyEmoji: { fontSize: 28 },
   historyInfo: { flex: 1 },
   historyName: { fontSize: 15, fontWeight: "600", color: "#111" },
   historyCharity: { fontSize: 12, color: "#16a34a", marginTop: 1 },
