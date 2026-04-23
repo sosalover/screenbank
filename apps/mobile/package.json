@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "start": "EXPO_ROUTER_APP_ROOT=./app expo start",
-    "android": "EXPO_ROUTER_APP_ROOT=./app expo start --android",
-    "ios": "EXPO_ROUTER_APP_ROOT=./app expo start --ios",
+    "start": "EXPO_ROUTER_APP_ROOT=./app expo start --dev-client",
+    "build:ios": "EXPO_ROUTER_APP_ROOT=./app expo run:ios",
+    "build:ios:device": "EXPO_ROUTER_APP_ROOT=./app expo run:ios --device",
+    "android": "EXPO_ROUTER_APP_ROOT=./app expo start --android --dev-client",
+    "ios": "EXPO_ROUTER_APP_ROOT=./app expo start --ios --dev-client",
     "web": "EXPO_ROUTER_APP_ROOT=./app expo start --web"
   },
   "dependencies": {
@@ -16,6 +18,7 @@
     "@shopify/react-native-skia": "2.2.12",
     "expo": "^54.0.0",
     "expo-constants": "~18.0.13",
+    "expo-dev-client": "~6.0.20",
     "expo-linking": "~8.0.11",
     "expo-router": "~6.0.23",
     "expo-status-bar": "~3.0.9",

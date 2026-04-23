@@ -9,8 +9,7 @@ import React, {
 export type CauseItem = {
   id: string;
   name: string;
-  emoji: string;
-  completedEmoji: string;
+  icon: string;
   minuteCost: number;
   realDurationMs: number;
   impact: string;
@@ -49,8 +48,7 @@ export const CAUSE_ITEMS: CauseItem[] = [
   {
     id: "puppy",
     name: "Shelter a Puppy",
-    emoji: "🐾",
-    completedEmoji: "🐕",
+    icon: "paw",
     minuteCost: 15,
     realDurationMs: 6 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Funds 1 day of shelter care",
@@ -59,8 +57,7 @@ export const CAUSE_ITEMS: CauseItem[] = [
   {
     id: "family",
     name: "Feed a Family",
-    emoji: "🥗",
-    completedEmoji: "👨‍👩‍👧",
+    icon: "restaurant-outline",
     minuteCost: 10,
     realDurationMs: 12 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Provides a family meal",
@@ -69,8 +66,7 @@ export const CAUSE_ITEMS: CauseItem[] = [
   {
     id: "bee",
     name: "Sow Bee Habitat",
-    emoji: "🌸",
-    completedEmoji: "🐝",
+    icon: "flower-outline",
     minuteCost: 5,
     realDurationMs: 18 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Plants 1m² of pollinator habitat",
@@ -79,8 +75,7 @@ export const CAUSE_ITEMS: CauseItem[] = [
   {
     id: "ocean",
     name: "Collect Ocean Plastic",
-    emoji: "🌊",
-    completedEmoji: "🐬",
+    icon: "boat-outline",
     minuteCost: 8,
     realDurationMs: 24 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Removes 1kg of ocean plastic",
@@ -89,8 +84,7 @@ export const CAUSE_ITEMS: CauseItem[] = [
   {
     id: "tree",
     name: "Plant a Sapling",
-    emoji: "🌱",
-    completedEmoji: "🌳",
+    icon: "leaf-outline",
     minuteCost: 5,
     realDurationMs: 2 * 24 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Plants a real tree",
@@ -99,8 +93,7 @@ export const CAUSE_ITEMS: CauseItem[] = [
   {
     id: "coral",
     name: "Rescue a Coral",
-    emoji: "🪸",
-    completedEmoji: "🐠",
+    icon: "fish-outline",
     minuteCost: 20,
     realDurationMs: 5 * 24 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Restores a coral reef fragment",

@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useGame, CAUSE_ITEMS, formatTimeRemaining } from "@/store/gameStore";
 
 export default function CausesScreen() {
@@ -13,7 +14,8 @@ export default function CausesScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Causes</Text>
         <View style={styles.balanceBadge}>
-          <Text style={styles.balanceText}>⏱ {state.minuteBalance} min</Text>
+          <Ionicons name="timer-outline" size={14} color="#166534" />
+          <Text style={styles.balanceText}>{state.minuteBalance} min</Text>
         </View>
       </View>
       <Text style={styles.subtitle}>Spend your reclaimed time on something real</Text>
@@ -21,11 +23,14 @@ export default function CausesScreen() {
       {/* Active build */}
       {activeBuild && (
         <View style={[styles.activeBuildCard, activeBuild.status === "delayed" && styles.activeBuildDelayed]}>
-          <Text style={styles.activeBuildEmoji}>{activeBuild.cause.emoji}</Text>
+          <Ionicons name={activeBuild.cause.icon as any} size={36} color={activeBuild.status === "delayed" ? "#ef4444" : "#16a34a"} />
           <View style={styles.activeBuildInfo}>
-            <Text style={styles.activeBuildTitle}>
-              {activeBuild.status === "delayed" ? "👁 Delayed by The Algorithm" : "🌱 In Progress"}
-            </Text>
+            <View style={styles.activeBuildTitleRow}>
+              <Ionicons name={activeBuild.status === "delayed" ? "eye" : "hammer-outline"} size={12} color="#6b7280" />
+              <Text style={styles.activeBuildTitle}>
+                {activeBuild.status === "delayed" ? "Delayed by The Algorithm" : "In Progress"}
+              </Text>
+            </View>
             <Text style={styles.activeBuildName}>{activeBuild.cause.name}</Text>
             <Text style={styles.activeBuildTimer}>
               {formatTimeRemaining(activeBuild.completesAt)} remaining
@@ -43,12 +48,15 @@ export default function CausesScreen() {
 
           return (
             <View key={cause.id} style={styles.card}>
-              <Text style={styles.cardEmoji}>{cause.emoji}</Text>
+              <Ionicons name={cause.icon as any} size={32} color="#16a34a" style={styles.cardIcon} />
               <Text style={styles.cardName}>{cause.name}</Text>
               <Text style={styles.cardCharity}>{cause.charity}</Text>
               <Text style={styles.cardImpact}>{cause.impact}</Text>
               <View style={styles.cardMeta}>
-                <Text style={styles.costText}>⏱ {cause.minuteCost} min</Text>
+                <View style={styles.costRow}>
+                <Ionicons name="timer-outline" size={12} color="#374151" />
+                <Text style={styles.costText}>{cause.minuteCost} min</Text>
+              </View>
               </View>
               <TouchableOpacity
                 style={[styles.queueBtn, disabled && styles.queueBtnDisabled]}
@@ -83,6 +91,9 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 28, fontWeight: "800", color: "#111" },
   balanceBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     backgroundColor: "#dcfce7",
     borderRadius: 20,
     paddingHorizontal: 14,
@@ -105,9 +116,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff1f2",
     borderColor: "#fca5a5",
   },
-  activeBuildEmoji: { fontSize: 36 },
   activeBuildInfo: { flex: 1 },
-  activeBuildTitle: { fontSize: 12, fontWeight: "600", color: "#6b7280", marginBottom: 2 },
+  activeBuildTitleRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 },
+  activeBuildTitle: { fontSize: 12, fontWeight: "600", color: "#6b7280" },
   activeBuildName: { fontSize: 16, fontWeight: "700", color: "#111" },
   activeBuildTimer: { fontSize: 13, color: "#16a34a", marginTop: 2 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
@@ -122,7 +133,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  cardEmoji: { fontSize: 32, marginBottom: 8 },
+  cardIcon: { marginBottom: 8 },
   cardName: { fontSize: 14, fontWeight: "700", color: "#111", marginBottom: 2 },
   cardCharity: { fontSize: 11, color: "#16a34a", fontWeight: "600", marginBottom: 4 },
   cardImpact: { fontSize: 11, color: "#6b7280", marginBottom: 10, lineHeight: 15 },
