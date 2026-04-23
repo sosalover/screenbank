@@ -1,16 +1,24 @@
 import { View, Text, StyleSheet } from "react-native";
-import { useGame, MOCK_SCREEN_TIME } from "@/store/gameStore";
+import { useGame, MOCK_SCREEN_TIME, formatTimeRemaining } from "@/store/gameStore";
 
 export default function HUD() {
   const { state } = useGame();
+  const activeBuild = state.activeBuilds[0] ?? null;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.tokens}>🪙 {state.tokenBalance} tokens</Text>
+      <Text style={styles.balance}>⏱ {state.minuteBalance} min saved</Text>
       <Text style={styles.sub}>
-        ⏱ {MOCK_SCREEN_TIME.remaining} left today · +{MOCK_SCREEN_TIME.potentialTokens} potential
+        📅 {MOCK_SCREEN_TIME.remaining} left today · 🔥 {state.streak} day streak
       </Text>
-      <Text style={styles.sub}>📊 Avg: {MOCK_SCREEN_TIME.avgScreenTime} / day</Text>
+      {activeBuild ? (
+        <Text style={[styles.sub, activeBuild.status === "delayed" && styles.delayed]}>
+          {activeBuild.status === "delayed" ? "👁 Delayed: " : "🌱 Building: "}
+          {activeBuild.cause.name} · {formatTimeRemaining(activeBuild.completesAt)}
+        </Text>
+      ) : (
+        <Text style={styles.sub}>🌿 Grove is quiet — start a build</Text>
+      )}
     </View>
   );
 }
@@ -27,7 +35,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  tokens: {
+  balance: {
     color: "#fff",
     fontSize: 22,
     fontWeight: "700",
@@ -37,5 +45,8 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.85)",
     fontSize: 13,
     marginTop: 2,
+  },
+  delayed: {
+    color: "#fca5a5",
   },
 });
