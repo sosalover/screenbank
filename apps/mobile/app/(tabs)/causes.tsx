@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useGame, CAUSE_ITEMS, formatTimeRemaining } from "@/store/gameStore";
 
 export default function CausesScreen() {
@@ -6,7 +7,8 @@ export default function CausesScreen() {
   const activeBuild = state.activeBuilds[0] ?? null;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.content}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Causes</Text>
@@ -66,6 +68,7 @@ export default function CausesScreen() {
         })}
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

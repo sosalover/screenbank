@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useGame, formatTimeRemaining } from "@/store/gameStore";
 
 function formatDate(date: Date) {
@@ -15,7 +16,8 @@ export default function AccountScreen() {
   });
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.content}>
       {/* Avatar */}
       <View style={styles.avatarRow}>
         <View style={styles.avatar}>
@@ -92,6 +94,7 @@ export default function AccountScreen() {
         )}
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
