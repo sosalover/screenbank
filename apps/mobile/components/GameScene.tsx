@@ -33,7 +33,9 @@ export default function GameScene() {
       )}
 
       {/* Ground */}
-      <View style={[styles.ground, state.algorithmActive && styles.groundDark]} />
+      <View
+        style={[styles.ground, state.algorithmActive && styles.groundDark]}
+      />
 
       {/* Default items */}
       {DEFAULT_ITEMS.map((item, i) => (
@@ -41,7 +43,10 @@ export default function GameScene() {
           key={`default-${i}`}
           style={[
             styles.sceneItem,
-            { left: `${item.position.x * 100}%`, top: `${item.position.y * 100}%` },
+            {
+              left: `${item.position.x * 100}%`,
+              top: `${item.position.y * 100}%`,
+            },
           ]}
         >
           {item.emoji}
@@ -54,7 +59,10 @@ export default function GameScene() {
           key={`complete-${i}`}
           style={[
             styles.sceneItem,
-            { left: `${build.position.x * 100}%`, top: `${build.position.y * 100}%` },
+            {
+              left: `${build.position.x * 100}%`,
+              top: `${build.position.y * 100}%`,
+            },
           ]}
         >
           {build.cause.completedEmoji}
@@ -67,13 +75,22 @@ export default function GameScene() {
           key={`active-${i}`}
           style={[
             styles.activeBuildContainer,
-            { left: `${build.position.x * 100}%`, top: `${build.position.y * 100}%` },
+            {
+              left: `${build.position.x * 100}%`,
+              top: `${build.position.y * 100}%`,
+            },
           ]}
         >
           <Text style={styles.sceneItemFaded}>{build.cause.emoji}</Text>
-          <View style={[styles.timerBadge, build.status === "delayed" && styles.timerBadgeDelayed]}>
+          <View
+            style={[
+              styles.timerBadge,
+              build.status === "delayed" && styles.timerBadgeDelayed,
+            ]}
+          >
             <Text style={styles.timerText}>
-              {build.status === "delayed" ? "⏸" : "⏳"} {formatTimeRemaining(build.completesAt)}
+              {build.status === "delayed" ? "⏸" : "⏳"}{" "}
+              {formatTimeRemaining(build.completesAt)}
             </Text>
           </View>
         </View>

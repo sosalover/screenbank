@@ -48,15 +48,17 @@ export default function CausesScreen() {
 
           return (
             <View key={cause.id} style={styles.card}>
-              <Ionicons name={cause.icon as any} size={32} color="#16a34a" style={styles.cardIcon} />
-              <Text style={styles.cardName}>{cause.name}</Text>
-              <Text style={styles.cardCharity}>{cause.charity}</Text>
-              <Text style={styles.cardImpact}>{cause.impact}</Text>
+              <View style={styles.cardBody}>
+                <Ionicons name={cause.icon as any} size={32} color="#16a34a" style={styles.cardIcon} />
+                <Text style={styles.cardName}>{cause.name}</Text>
+                <Text style={styles.cardCharity}>{cause.charity}</Text>
+                <Text style={styles.cardImpact}>{cause.impact}</Text>
+              </View>
               <View style={styles.cardMeta}>
                 <View style={styles.costRow}>
-                <Ionicons name="timer-outline" size={12} color="#374151" />
-                <Text style={styles.costText}>{cause.minuteCost} min</Text>
-              </View>
+                  <Ionicons name="timer-outline" size={12} color="#374151" />
+                  <Text style={styles.costText}>{cause.minuteCost} min</Text>
+                </View>
               </View>
               <TouchableOpacity
                 style={[styles.queueBtn, disabled && styles.queueBtnDisabled]}

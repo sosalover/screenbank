@@ -5,6 +5,7 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
+import { GRID } from "@/utils/gridMath";
 
 export type CauseItem = {
   id: string;
@@ -23,7 +24,13 @@ export type Build = {
   completesAt: Date;
   delayedMs: number;
   status: "in_progress" | "delayed" | "complete";
-  position: { x: number; y: number };
+  gridPos: { col: number; row: number };
+};
+
+type PlacementMode = {
+  active: boolean;
+  pendingCause: CauseItem | null;
+  selectedCell: { col: number; row: number } | null;
 };
 
 type State = {
@@ -33,16 +40,21 @@ type State = {
   streak: number;
   algorithmRaids: number;
   algorithmActive: boolean;
+  placementMode: PlacementMode;
 };
 
 type Action =
   | { type: "QUEUE_BUILD"; cause: CauseItem }
   | { type: "COMPLETE_BUILD"; buildId: string }
   | { type: "ALGORITHM_RAID"; minutesOver: number }
-  | { type: "CLEAR_ALGORITHM" };
+  | { type: "CLEAR_ALGORITHM" }
+  | { type: "ENTER_PLACEMENT_MODE"; cause: CauseItem }
+  | { type: "SELECT_CELL"; col: number; row: number }
+  | { type: "CONFIRM_PLACEMENT" }
+  | { type: "CANCEL_PLACEMENT_MODE" }
+  | { type: "TICK" };
 
-// Speed multiplier for dev — makes build timers run 1000x faster
-const DEV_SPEED = __DEV__ ? 0.001 : 1;
+const DEV_SPEED = __DEV__ ? 0.00005 : 1;
 
 export const CAUSE_ITEMS: CauseItem[] = [
   {
@@ -132,6 +144,24 @@ export function formatTimeRemaining(completesAt: Date): string {
   return `${seconds}s`;
 }
 
+/** Pick a random unoccupied grove cell. */
+function randomGroveCell(existingBuilds: Build[]): { col: number; row: number } {
+  const occupied = new Set(existingBuilds.map((b) => `${b.gridPos.col},${b.gridPos.row}`));
+  const candidates: { col: number; row: number }[] = [];
+  for (let row = 0; row <= GRID.GROVE_END_ROW; row++) {
+    for (let col = 0; col < GRID.COLS; col++) {
+      if (!occupied.has(`${col},${row}`)) candidates.push({ col, row });
+    }
+  }
+  return candidates[Math.floor(Math.random() * candidates.length)] ?? { col: 0, row: 0 };
+}
+
+const initialPlacementMode: PlacementMode = {
+  active: false,
+  pendingCause: null,
+  selectedCell: null,
+};
+
 const initialState: State = {
   minuteBalance: 46,
   activeBuilds: [],
@@ -139,13 +169,16 @@ const initialState: State = {
   streak: 4,
   algorithmRaids: 0,
   algorithmActive: false,
+  placementMode: initialPlacementMode,
 };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "QUEUE_BUILD": {
       if (state.minuteBalance < action.cause.minuteCost) return state;
-      if (state.activeBuilds.length > 0) return state; // 1 builder slot
+      if (state.activeBuilds.length > 0) return state;
+      const allBuilds = [...state.activeBuilds, ...state.completedBuilds];
+      const gridPos = randomGroveCell(allBuilds);
       const now = new Date();
       const build: Build = {
         id: `${action.cause.id}-${Date.now()}`,
@@ -154,10 +187,7 @@ function reducer(state: State, action: Action): State {
         completesAt: new Date(now.getTime() + action.cause.realDurationMs),
         delayedMs: 0,
         status: "in_progress",
-        position: {
-          x: Math.random() * 0.65 + 0.05,
-          y: Math.random() * 0.25 + 0.5,
-        },
+        gridPos,
       };
       return {
         ...state,
@@ -171,10 +201,7 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         activeBuilds: [],
-        completedBuilds: [
-          ...state.completedBuilds,
-          { ...build, status: "complete" },
-        ],
+        completedBuilds: [...state.completedBuilds, { ...build, status: "complete" }],
       };
     }
     case "ALGORITHM_RAID": {
@@ -201,6 +228,47 @@ function reducer(state: State, action: Action): State {
         })),
       };
     }
+    case "ENTER_PLACEMENT_MODE": {
+      if (state.minuteBalance < action.cause.minuteCost) return state;
+      if (state.activeBuilds.length > 0) return state;
+      return {
+        ...state,
+        placementMode: { active: true, pendingCause: action.cause, selectedCell: null },
+      };
+    }
+    case "SELECT_CELL": {
+      if (!state.placementMode.active) return state;
+      return {
+        ...state,
+        placementMode: { ...state.placementMode, selectedCell: { col: action.col, row: action.row } },
+      };
+    }
+    case "CONFIRM_PLACEMENT": {
+      const { pendingCause, selectedCell } = state.placementMode;
+      if (!pendingCause || !selectedCell) return state;
+      if (state.minuteBalance < pendingCause.minuteCost) return state;
+      const now = new Date();
+      const build: Build = {
+        id: `${pendingCause.id}-${Date.now()}`,
+        cause: pendingCause,
+        startedAt: now,
+        completesAt: new Date(now.getTime() + pendingCause.realDurationMs),
+        delayedMs: 0,
+        status: "in_progress",
+        gridPos: selectedCell,
+      };
+      return {
+        ...state,
+        minuteBalance: state.minuteBalance - pendingCause.minuteCost,
+        activeBuilds: [build],
+        placementMode: initialPlacementMode,
+      };
+    }
+    case "CANCEL_PLACEMENT_MODE": {
+      return { ...state, placementMode: initialPlacementMode };
+    }
+    case "TICK":
+      return { ...state };
     default:
       return state;
   }
@@ -214,18 +282,17 @@ const GameContext = createContext<{
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  // Check build completion every second
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
+      let completed = false;
       state.activeBuilds.forEach((build) => {
-        if (
-          build.status === "in_progress" &&
-          now >= build.completesAt.getTime()
-        ) {
+        if (build.status === "in_progress" && now >= build.completesAt.getTime()) {
           dispatch({ type: "COMPLETE_BUILD", buildId: build.id });
+          completed = true;
         }
       });
+      if (!completed) dispatch({ type: "TICK" });
     }, 1000);
     return () => clearInterval(interval);
   }, [state.activeBuilds]);
