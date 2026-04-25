@@ -1,26 +1,21 @@
-// Sky layer — gradient sky, clouds, sun.
-// To replace with a sprite background: accept a backgroundImage prop and draw it instead.
-// Algorithm active: sky shifts to dark/stormy colours.
-
 import React from 'react';
-import { Circle, Group, LinearGradient, Rect, vec } from '@shopify/react-native-skia';
+import { Circle, Group, LinearGradient, Path, Rect, Skia, vec } from '@shopify/react-native-skia';
 
 interface SkyLayerProps {
   width: number;
-  height: number;          // sky height (SKY_HEIGHT constant)
+  height: number;
   algorithmActive?: boolean;
+  tick?: number;
 }
 
-const CLOUDS: Array<{ cx: number; cy: number }> = [
-  { cx: 0.15, cy: 0.35 },
-  { cx: 0.55, cy: 0.25 },
-  { cx: 0.82, cy: 0.5 },
+const CLOUDS = [
+  { cx: 0.15, cy: 0.38, phase: 0.0, scale: 1.0 },
+  { cx: 0.55, cy: 0.28, phase: 2.1, scale: 0.8 },
+  { cx: 0.82, cy: 0.52, phase: 4.3, scale: 1.1 },
 ];
 
-function Cloud({ cx, cy, width, height }: { cx: number; cy: number; width: number; height: number }) {
-  const x = cx * width;
-  const y = cy * height;
-  const r = width * 0.04;
+function Cloud({ x, y, width, scale }: { x: number; y: number; width: number; scale: number }) {
+  const r = width * 0.04 * scale;
   return (
     <Group opacity={0.92}>
       <Circle cx={x} cy={y} r={r * 1.2} color="white" />
@@ -31,34 +26,30 @@ function Cloud({ cx, cy, width, height }: { cx: number; cy: number; width: numbe
   );
 }
 
-export function SkyLayer({ width, height, algorithmActive = false }: SkyLayerProps) {
-  const skyColors = algorithmActive
-    ? ['#1a1a2e', '#16213e']
-    : ['#87CEEB', '#c5e8f5'];
-
+export function SkyLayer({ width, height, algorithmActive = false, tick = 0 }: SkyLayerProps) {
+  const skyColors = algorithmActive ? ['#1a1a2e', '#16213e'] : ['#87CEEB', '#c5e8f5'];
   const sunColor = algorithmActive ? '#6b21a8' : '#FDB813';
   const sunGlowColor = algorithmActive ? '#7c3aed' : '#FDE68A';
 
+  const sunR = 11 + Math.sin(tick * 0.13) * 3;
+  const glowR = 16 + Math.sin(tick * 0.09) * 6;
+
   return (
     <Group>
-      {/* Sky gradient */}
       <Rect x={0} y={0} width={width} height={height}>
-        <LinearGradient
-          start={vec(0, 0)}
-          end={vec(0, height)}
-          colors={skyColors}
-        />
+        <LinearGradient start={vec(0, 0)} end={vec(0, height)} colors={skyColors} />
       </Rect>
 
       {/* Sun / moon */}
-      <Circle cx={width - 36} cy={28} r={16} color={sunGlowColor} opacity={0.4} />
-      <Circle cx={width - 36} cy={28} r={11} color={sunColor} />
+      <Circle cx={width - 36} cy={28} r={glowR} color={sunGlowColor} opacity={0.4} />
+      <Circle cx={width - 36} cy={28} r={sunR} color={sunColor} />
 
-      {/* Clouds (hidden during Algorithm raid) */}
-      {!algorithmActive &&
-        CLOUDS.map((c, i) => (
-          <Cloud key={i} cx={c.cx} cy={c.cy} width={width} height={height} />
-        ))}
+      {/* Clouds — gently float with sin offset */}
+      {!algorithmActive && CLOUDS.map((c, i) => {
+        const x = c.cx * width + Math.sin(tick * 0.018 + c.phase) * 38;
+        const y = c.cy * height + Math.sin(tick * 0.012 + c.phase + 1) * 10;
+        return <Cloud key={i} x={x} y={y} width={width} scale={c.scale} />;
+      })}
     </Group>
   );
 }

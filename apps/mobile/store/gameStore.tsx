@@ -33,6 +33,11 @@ type PlacementMode = {
   selectedCell: { col: number; row: number } | null;
 };
 
+type MoveMode = {
+  active: boolean;
+  buildId: string | null;
+};
+
 type State = {
   minuteBalance: number;
   activeBuilds: Build[];
@@ -41,6 +46,7 @@ type State = {
   algorithmRaids: number;
   algorithmActive: boolean;
   placementMode: PlacementMode;
+  moveMode: MoveMode;
 };
 
 type Action =
@@ -52,6 +58,9 @@ type Action =
   | { type: "SELECT_CELL"; col: number; row: number }
   | { type: "CONFIRM_PLACEMENT" }
   | { type: "CANCEL_PLACEMENT_MODE" }
+  | { type: "ENTER_MOVE_MODE"; buildId: string }
+  | { type: "CANCEL_MOVE_MODE" }
+  | { type: "MOVE_BUILD"; buildId: string; col: number; row: number }
   | { type: "TICK" };
 
 const DEV_SPEED = __DEV__ ? 0.00005 : 1;
@@ -162,6 +171,8 @@ const initialPlacementMode: PlacementMode = {
   selectedCell: null,
 };
 
+const initialMoveMode: MoveMode = { active: false, buildId: null };
+
 const initialState: State = {
   minuteBalance: 46,
   activeBuilds: [],
@@ -170,6 +181,7 @@ const initialState: State = {
   algorithmRaids: 0,
   algorithmActive: false,
   placementMode: initialPlacementMode,
+  moveMode: initialMoveMode,
 };
 
 function reducer(state: State, action: Action): State {
@@ -266,6 +278,25 @@ function reducer(state: State, action: Action): State {
     }
     case "CANCEL_PLACEMENT_MODE": {
       return { ...state, placementMode: initialPlacementMode };
+    }
+    case "ENTER_MOVE_MODE": {
+      const exists = state.completedBuilds.some((b) => b.id === action.buildId);
+      if (!exists) return state;
+      return { ...state, moveMode: { active: true, buildId: action.buildId } };
+    }
+    case "CANCEL_MOVE_MODE": {
+      return { ...state, moveMode: initialMoveMode };
+    }
+    case "MOVE_BUILD": {
+      return {
+        ...state,
+        completedBuilds: state.completedBuilds.map((b) =>
+          b.id === action.buildId
+            ? { ...b, gridPos: { col: action.col, row: action.row } }
+            : b
+        ),
+        moveMode: initialMoveMode,
+      };
     }
     case "TICK":
       return { ...state };

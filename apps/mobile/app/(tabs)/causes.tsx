@@ -1,9 +1,11 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useGame, CAUSE_ITEMS, formatTimeRemaining } from "@/store/gameStore";
 
 export default function CausesScreen() {
+  const router = useRouter();
   const { state, dispatch } = useGame();
   const activeBuild = state.activeBuilds[0] ?? null;
 
@@ -62,7 +64,10 @@ export default function CausesScreen() {
               </View>
               <TouchableOpacity
                 style={[styles.queueBtn, disabled && styles.queueBtnDisabled]}
-                onPress={() => dispatch({ type: "QUEUE_BUILD", cause })}
+                onPress={() => {
+                  dispatch({ type: "ENTER_PLACEMENT_MODE", cause });
+                  router.navigate("/(tabs)");
+                }}
                 disabled={disabled}
               >
                 <Text style={[styles.queueBtnText, disabled && styles.queueBtnTextDisabled]}>

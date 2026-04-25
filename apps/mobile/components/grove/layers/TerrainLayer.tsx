@@ -45,15 +45,17 @@ export function TerrainLayer({
         let invalid = false;
         let selected = false;
 
-        if (placementMode?.active) {
+        if (placementMode?.active && placementMode.pendingCauseId) {
           const cellKey = `${col},${row}`;
+          const isValidTerrain = isCauseValidForTile(placementMode.pendingCauseId, row);
           const isOccupied = placementMode.occupiedCells?.has(cellKey) ?? false;
           selected =
             placementMode.selectedCell?.col === col &&
             placementMode.selectedCell?.row === row;
-          // Terrain validity added in Phase 3 with isCauseValidForTile
-          highlighted = !isOccupied && !selected;
-          invalid = isOccupied;
+          if (isValidTerrain && !selected) {
+            highlighted = !isOccupied;
+            invalid = isOccupied;
+          }
         }
 
         const tileProps: TileRendererProps & { col: number; row: number } = {
@@ -78,7 +80,7 @@ export function TerrainLayer({
     }
 
     return result;
-  }, [tileSize, gridOffsetX, panY, placementMode, algorithmActive]);
+  }, [tileSize, gridOffsetX, panY, gridOffsetY, placementMode, algorithmActive]);
 
   return <>{tiles}</>;
 }

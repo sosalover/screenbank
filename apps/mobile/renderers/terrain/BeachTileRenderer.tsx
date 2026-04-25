@@ -19,16 +19,6 @@ export function BeachTileRenderer({ x, y, size, ...rest }: TileRendererProps) {
     <BaseTileRenderer x={x} y={y} size={size} {...rest}>
       {/* Sandy fill */}
       <Rect x={x} y={y} width={size} height={size} color="#f5deb3" />
-      {/* Subtle grid line */}
-      <Rect
-        x={x}
-        y={y}
-        width={size}
-        height={size}
-        color="#c8a050"
-        style="stroke"
-        strokeWidth={0.4}
-      />
       {/* Decorative pebble speckles */}
       {SPECKLES.map((s, i) => (
         <Circle

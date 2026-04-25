@@ -2,6 +2,28 @@ import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useGame, MOCK_SCREEN_TIME, formatTimeRemaining } from "@/store/gameStore";
 
+function StatCard({
+  icon,
+  iconColor,
+  value,
+  label,
+}: {
+  icon: string;
+  iconColor: string;
+  value: string | number;
+  label: string;
+}) {
+  return (
+    <View style={styles.card}>
+      <Ionicons name={icon as any} size={18} color={iconColor} />
+      <View>
+        <Text style={styles.cardValue}>{value}</Text>
+        <Text style={styles.cardLabel}>{label}</Text>
+      </View>
+    </View>
+  );
+}
+
 export default function HUD() {
   const { state } = useGame();
   const activeBuild = state.activeBuilds[0] ?? null;
@@ -9,70 +31,95 @@ export default function HUD() {
   return (
     <View style={styles.container}>
       <View style={styles.row}>
-        <Ionicons name="timer-outline" size={20} color="#fff" />
-        <Text style={styles.balance}>{state.minuteBalance} min saved</Text>
+        <StatCard icon="timer-outline" iconColor="#16a34a" value={state.minuteBalance} label="min saved" />
+        <View style={styles.cardDivider} />
+        <StatCard icon="phone-portrait-outline" iconColor="#0369a1" value={MOCK_SCREEN_TIME.remaining} label="left today" />
       </View>
+      <View style={styles.rowDivider} />
       <View style={styles.row}>
-        <Ionicons name="phone-portrait-outline" size={13} color="rgba(255,255,255,0.85)" />
-        <Text style={styles.sub}>{MOCK_SCREEN_TIME.remaining} left today</Text>
-        <Text style={styles.dot}>·</Text>
-        <Ionicons name="flame" size={13} color="rgba(255,255,255,0.85)" />
-        <Text style={styles.sub}>{state.streak} day streak</Text>
+        <StatCard icon="flame" iconColor="#f97316" value={state.streak} label="day streak" />
+        <View style={styles.cardDivider} />
+        <StatCard icon="checkmark-circle-outline" iconColor="#7c3aed" value={state.completedBuilds.length} label="builds done" />
       </View>
-      {activeBuild ? (
-        <View style={styles.row}>
-          <Ionicons
-            name={activeBuild.status === "delayed" ? "eye" : "hammer-outline"}
-            size={13}
-            color={activeBuild.status === "delayed" ? "#fca5a5" : "rgba(255,255,255,0.85)"}
-          />
-          <Text style={[styles.sub, activeBuild.status === "delayed" && styles.delayed]}>
-            {activeBuild.status === "delayed" ? "Delayed: " : "Building: "}
-            {activeBuild.cause.name} · {formatTimeRemaining(activeBuild.completesAt)}
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.row}>
-          <Ionicons name="leaf-outline" size={13} color="rgba(255,255,255,0.85)" />
-          <Text style={styles.sub}>Grove is quiet — start a build</Text>
-        </View>
-      )}
+      <View style={styles.rowDivider} />
+      <View style={styles.buildRow}>
+        <Ionicons
+          name={activeBuild ? (activeBuild.status === "delayed" ? "eye" : "hammer-outline") : "leaf-outline"}
+          size={14}
+          color={activeBuild ? (activeBuild.status === "delayed" ? "#ef4444" : "#16a34a") : "#9ca3af"}
+        />
+        {activeBuild ? (
+          <>
+            <Text style={[styles.buildText, activeBuild.status === "delayed" && styles.delayed]} numberOfLines={1}>
+              {activeBuild.status === "delayed" ? "Delayed: " : "Building: "}{activeBuild.cause.name}
+            </Text>
+            <Text style={styles.timer}>{formatTimeRemaining(activeBuild.completesAt)}</Text>
+          </>
+        ) : (
+          <Text style={styles.buildText}>Grove is quiet — start a build</Text>
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    position: "absolute",
-    top: 60,
-    left: 16,
-    right: 16,
-    zIndex: 10,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    borderRadius: 16,
+    flex: 1,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 6,
+    paddingVertical: 8,
   },
   row: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
   },
-  balance: {
-    color: "#fff",
-    fontSize: 22,
+  card: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  cardDivider: {
+    width: 1,
+    alignSelf: "stretch",
+    backgroundColor: "#e5e7eb",
+    marginVertical: 8,
+  },
+  rowDivider: {
+    height: 1,
+    backgroundColor: "#e5e7eb",
+  },
+  cardValue: {
+    fontSize: 16,
     fontWeight: "700",
+    color: "#111",
   },
-  sub: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 13,
+  cardLabel: {
+    fontSize: 11,
+    color: "#6b7280",
   },
-  dot: {
-    color: "rgba(255,255,255,0.4)",
-    fontSize: 13,
+  buildRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  buildText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#6b7280",
   },
   delayed: {
-    color: "#fca5a5",
+    color: "#ef4444",
+  },
+  timer: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#374151",
   },
 });

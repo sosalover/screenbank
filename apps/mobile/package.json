@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "start": "EXPO_ROUTER_APP_ROOT=./app expo start --dev-client",
+    "start": "EXPO_ROUTER_APP_ROOT=./app expo start --dev-client --clear",
     "build:ios": "EXPO_ROUTER_APP_ROOT=./app expo run:ios",
     "build:ios:device": "EXPO_ROUTER_APP_ROOT=./app expo run:ios --device",
     "android": "EXPO_ROUTER_APP_ROOT=./app expo start --android --dev-client",

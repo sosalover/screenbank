@@ -21,16 +21,6 @@ export function OceanTileRenderer({ x, y, size, ...rest }: TileRendererProps & {
     <BaseTileRenderer x={x} y={y} size={size} {...rest}>
       {/* Ocean fill */}
       <Rect x={x} y={y} width={size} height={size} color={fill} />
-      {/* Subtle grid line */}
-      <Rect
-        x={x}
-        y={y}
-        width={size}
-        height={size}
-        color="#075985"
-        style="stroke"
-        strokeWidth={0.4}
-      />
     </BaseTileRenderer>
   );
 }

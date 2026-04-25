@@ -22,16 +22,6 @@ export function GroveTileRenderer({ x, y, size, ...rest }: TileRendererProps & {
     <BaseTileRenderer x={x} y={y} size={size} {...rest}>
       {/* Grass fill */}
       <Rect x={x} y={y} width={size} height={size} color={fill} />
-      {/* Grid line */}
-      <Rect
-        x={x}
-        y={y}
-        width={size}
-        height={size}
-        color="#16a34a"
-        style="stroke"
-        strokeWidth={0.5}
-      />
     </BaseTileRenderer>
   );
 }
