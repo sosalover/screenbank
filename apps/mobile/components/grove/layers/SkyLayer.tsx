@@ -1,5 +1,14 @@
-import React from 'react';
-import { Circle, Group, LinearGradient, Path, Rect, Skia, vec } from '@shopify/react-native-skia';
+import React, { useMemo } from "react";
+import {
+  Circle,
+  FontWeight,
+  Group,
+  LinearGradient,
+  Rect,
+  Skia,
+  Text,
+  vec,
+} from "@shopify/react-native-skia";
 
 interface SkyLayerProps {
   width: number;
@@ -14,7 +23,17 @@ const CLOUDS = [
   { cx: 0.82, cy: 0.52, phase: 4.3, scale: 1.1 },
 ];
 
-function Cloud({ x, y, width, scale }: { x: number; y: number; width: number; scale: number }) {
+function Cloud({
+  x,
+  y,
+  width,
+  scale,
+}: {
+  x: number;
+  y: number;
+  width: number;
+  scale: number;
+}) {
   const r = width * 0.04 * scale;
   return (
     <Group opacity={0.92}>
@@ -26,30 +45,69 @@ function Cloud({ x, y, width, scale }: { x: number; y: number; width: number; sc
   );
 }
 
-export function SkyLayer({ width, height, algorithmActive = false, tick = 0 }: SkyLayerProps) {
-  const skyColors = algorithmActive ? ['#1a1a2e', '#16213e'] : ['#87CEEB', '#c5e8f5'];
-  const sunColor = algorithmActive ? '#6b21a8' : '#FDB813';
-  const sunGlowColor = algorithmActive ? '#7c3aed' : '#FDE68A';
+export function SkyLayer({
+  width,
+  height,
+  algorithmActive = false,
+  tick = 0,
+}: SkyLayerProps) {
+  const skyColors = algorithmActive
+    ? ["#1a1a2e", "#16213e"]
+    : ["#87CEEB", "#c5e8f5"];
+
+  const fontSize = Math.round(width * 0.082);
+  const font = useMemo(() => {
+    const typeface = Skia.FontMgr.System().matchFamilyStyle("Avenir", {
+      weight: FontWeight.Bold,
+    });
+    return Skia.Font(typeface, fontSize);
+  }, [fontSize]);
+  const textWidth = font ? font.measureText("Grove").width : 0;
+
+  // Centred horizontally, near the bottom of the sky
+  const anchorX = width / 2;
+  const anchorY = height * 0.78;
+  const textX = anchorX - textWidth / 2;
+  const textY = anchorY + fontSize * 0.36;
 
   const sunR = 11 + Math.sin(tick * 0.13) * 3;
   const glowR = 16 + Math.sin(tick * 0.09) * 6;
+  const sunColor = algorithmActive ? "#6b21a8" : "#FDB813";
+  const sunGlowColor = algorithmActive ? "#7c3aed" : "#FDE68A";
+
+  const textColor = algorithmActive ? "#c084fc" : "rgba(255,255,255,0.88)";
 
   return (
     <Group>
+      {/* Sky gradient */}
       <Rect x={0} y={0} width={width} height={height}>
-        <LinearGradient start={vec(0, 0)} end={vec(0, height)} colors={skyColors} />
+        <LinearGradient
+          start={vec(0, 0)}
+          end={vec(0, height)}
+          colors={skyColors}
+        />
       </Rect>
 
-      {/* Sun / moon */}
-      <Circle cx={width - 36} cy={28} r={glowR} color={sunGlowColor} opacity={0.4} />
+      {/* Sun */}
+      <Circle
+        cx={width - 36}
+        cy={28}
+        r={glowR}
+        color={sunGlowColor}
+        opacity={0.4}
+      />
       <Circle cx={width - 36} cy={28} r={sunR} color={sunColor} />
 
-      {/* Clouds — gently float with sin offset */}
-      {!algorithmActive && CLOUDS.map((c, i) => {
-        const x = c.cx * width + Math.sin(tick * 0.018 + c.phase) * 38;
-        const y = c.cy * height + Math.sin(tick * 0.012 + c.phase + 1) * 10;
-        return <Cloud key={i} x={x} y={y} width={width} scale={c.scale} />;
-      })}
+      {/* "Grove" — rendered before clouds so they drift over it */}
+      <Text x={textX} y={textY} text="Grove" font={font} color={"#ffffff"} />
+
+      {/* Clouds */}
+      {!algorithmActive &&
+        CLOUDS.map((c, i) => {
+          const x = c.cx * width + Math.sin(tick * 0.018 + c.phase) * 38;
+          const y = c.cy * height + Math.sin(tick * 0.012 + c.phase + 1) * 10;
+          return <Cloud key={i} x={x} y={y} width={width} scale={c.scale} />;
+        })}
     </Group>
   );
 }
