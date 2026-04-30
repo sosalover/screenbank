@@ -1,7 +1,8 @@
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useGame, formatTimeRemaining } from "@/store/gameStore";
+import { useAuth } from "@/store/authStore";
 
 function formatDate(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -9,6 +10,14 @@ function formatDate(date: Date) {
 
 export default function AccountScreen() {
   const { state } = useGame();
+  const { signOut } = useAuth();
+
+  function handleSignOut() {
+    Alert.alert("Sign out", "Are you sure?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign out", style: "destructive", onPress: signOut },
+    ]);
+  }
   const { completedBuilds, activeBuilds } = state;
 
   const impact: Record<string, number> = {};
@@ -100,6 +109,10 @@ export default function AccountScreen() {
           ))
         )}
       </View>
+      {/* Sign out */}
+      <TouchableOpacity onPress={handleSignOut} style={styles.signOutBtn}>
+        <Text style={styles.signOutText}>Sign out</Text>
+      </TouchableOpacity>
     </ScrollView>
     </SafeAreaView>
   );
@@ -170,4 +183,12 @@ const styles = StyleSheet.create({
   historyCharity: { fontSize: 12, color: "#16a34a", marginTop: 1 },
   historyDate: { fontSize: 12, color: "#9ca3af", marginTop: 2 },
   historyCost: { fontSize: 13, fontWeight: "700", color: "#6b7280" },
+  signOutBtn: {
+    marginTop: 8,
+    padding: 16,
+    alignItems: "center",
+    borderRadius: 12,
+    backgroundColor: "#fff1f2",
+  },
+  signOutText: { fontSize: 15, fontWeight: "600", color: "#ef4444" },
 });

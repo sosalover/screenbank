@@ -238,6 +238,42 @@ export const MOCK_SCREEN_TIME = {
 - [ ] Push notifications for build completion + Algorithm raids
 - [ ] Real charity partner links
 
+### Phase 7 — Local persistence ✅
+
+- [x] AsyncStorage: save/load game state across app restarts
+- [x] Date serialization (ISO strings) for `activeBuilds` / `completedBuilds`
+- [x] Auto-complete builds that finished while the app was closed
+- [x] Transient state (placement mode, move mode, algorithmActive) resets on launch
+
+### Phase 8 — Startup & auth flow ✅
+
+- [x] Splash/onboarding: 3-screen intro ("The Algorithm has been stealing your time")
+- [x] Budget-setting screen on first launch (screen time budget picker)
+- [x] Supabase auth (sign up / sign in)
+- [x] Auth-aware routing: welcome → sign up → setup → app; returning users go straight to app
+- [ ] Hydrate from Supabase profile after login; fall back to local if offline
+- [ ] Sign in with Apple
+- [ ] Username/display name — set during signup or setup, stored in Supabase profile; required for friends/social features
+
+**Deferred: email confirmation UX polish**
+> Email confirmation works — Supabase confirms on link click. The redirect currently lands on "localhost not found" in the browser (harmless).
+> When polishing, needs:
+> - Configure a custom URL scheme (e.g. `grove://`) so confirmation link opens the app directly
+> - Post-signup screen: "Check your email" holding screen while user confirms
+> - After deep link opens app, detect confirmed state and land on sign-in with message: "Email confirmed — sign in to enter your Grove"
+> - Handle expired/invalid links with a re-send option
+
+### Phase 9 — UI/Story polish (after Phase 8)
+
+**Theme: make screen time reclamation feel central and Grover feel alive**
+
+- [ ] **Token clarity** — rename "minutes saved" to "time reclaimed"; show running today total prominently; HUD badge should read "46 min reclaimed" not just a number
+- [ ] **Grover as protagonist** — Grover should feel like he has time to spend; idle animations when nothing is building (reading, napping, exploring); celebrate build completions more dramatically; intro screen should star Grover reacting to The Algorithm
+- [ ] **Cause icon legibility** — replace abstract Ionicons with custom illustrated icons or emoji-based glyphs that immediately read as their cause (tree, puppy, bee, ocean, coral, family)
+- [ ] **Story framing in Causes screen** — each cause card should lead with the impact narrative ("Every minute you reclaim plants a real tree") not just the cost
+- [ ] **Algorithm raid narrative** — when The Algorithm raids, Grover should visibly react (cower, look up at sky); post-raid dismissal should feel like a recovery moment, not just a banner close
+- [ ] **Onboarding tone** — language throughout should feel like Grover is guiding the user, not an app UI talking at them
+
 ---
 
 ## Decided

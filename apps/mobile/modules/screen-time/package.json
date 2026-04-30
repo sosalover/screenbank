@@ -1,0 +1,6 @@
+{
+  "name": "screen-time",
+  "version": "1.0.0",
+  "description": "iOS Screen Time native module for ScreenBank",
+  "main": "src/index.ts"
+}

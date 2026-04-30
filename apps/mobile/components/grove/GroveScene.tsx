@@ -209,32 +209,85 @@ export function GroveScene() {
         />
       )}
 
-      {/* Dev-only: simulate Algorithm raid */}
+      {/* Dev-only controls */}
       {__DEV__ && (
-        <TouchableOpacity
-          style={[styles.devBtn, { bottom: bottomInset + 80 }]}
-          onPress={() => dispatch({ type: 'ALGORITHM_RAID', minutesOver: 30 })}
-        >
-          <Text style={styles.devBtnText}>Raid</Text>
-        </TouchableOpacity>
+        <View style={[styles.devPanel, { bottom: bottomInset + 80 }]}>
+          <TouchableOpacity
+            style={styles.devBtn}
+            onPress={() => dispatch({ type: 'ALGORITHM_RAID', minutesOver: 30 })}
+          >
+            <Text style={styles.devBtnText}>Raid</Text>
+          </TouchableOpacity>
+          <View style={styles.devRow}>
+            <Text style={styles.devLabel}>Screen</Text>
+            <TouchableOpacity style={styles.devSmallBtn} onPress={() => dispatch({ type: 'SET_SCREEN_TIME_USED', usedMinutes: state.screenTimeUsedMinutes - 15 })}>
+              <Text style={styles.devBtnText}>-</Text>
+            </TouchableOpacity>
+            <Text style={styles.devValue}>{state.screenTimeUsedMinutes}m</Text>
+            <TouchableOpacity style={styles.devSmallBtn} onPress={() => dispatch({ type: 'SET_SCREEN_TIME_USED', usedMinutes: state.screenTimeUsedMinutes + 15 })}>
+              <Text style={styles.devBtnText}>+</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.devRow}>
+            <Text style={styles.devLabel}>Tokens</Text>
+            <TouchableOpacity style={styles.devSmallBtn} onPress={() => dispatch({ type: 'SET_MINUTE_BALANCE', minutes: state.minuteBalance - 10 })}>
+              <Text style={styles.devBtnText}>-</Text>
+            </TouchableOpacity>
+            <Text style={styles.devValue}>{state.minuteBalance}m</Text>
+            <TouchableOpacity style={styles.devSmallBtn} onPress={() => dispatch({ type: 'SET_MINUTE_BALANCE', minutes: state.minuteBalance + 10 })}>
+              <Text style={styles.devBtnText}>+</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  devBtn: {
+  devPanel: {
     position: 'absolute',
     right: 16,
-    backgroundColor: 'rgba(124,58,237,0.85)',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: 6,
     zIndex: 99,
+  },
+  devBtn: {
+    backgroundColor: 'rgba(124,58,237,0.85)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    alignItems: 'center',
+  },
+  devRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    gap: 6,
+  },
+  devSmallBtn: {
+    backgroundColor: 'rgba(124,58,237,0.85)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   devBtnText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '700',
+  },
+  devLabel: {
+    color: '#fff',
+    fontSize: 10,
+    width: 42,
+  },
+  devValue: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+    minWidth: 30,
+    textAlign: 'center',
   },
 });

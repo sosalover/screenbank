@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useGame, MOCK_SCREEN_TIME, formatTimeRemaining } from "@/store/gameStore";
+import { useGame, formatTimeRemaining, formatMinutes } from "@/store/gameStore";
 
 function StatCard({
   icon,
@@ -27,13 +27,14 @@ function StatCard({
 export default function HUD() {
   const { state } = useGame();
   const activeBuild = state.activeBuilds[0] ?? null;
+  const minutesLeft = Math.max(0, state.screenTimeBudgetMinutes - state.screenTimeUsedMinutes);
 
   return (
     <View style={styles.container}>
       <View style={styles.row}>
-        <StatCard icon="timer-outline" iconColor="#16a34a" value={state.minuteBalance} label="min saved" />
+        <StatCard icon="timer-outline" iconColor="#16a34a" value={`${state.minuteBalance}m`} label="reclaimed" />
         <View style={styles.cardDivider} />
-        <StatCard icon="phone-portrait-outline" iconColor="#0369a1" value={MOCK_SCREEN_TIME.remaining} label="left today" />
+        <StatCard icon="phone-portrait-outline" iconColor="#0369a1" value={formatMinutes(minutesLeft)} label="left today" />
       </View>
       <View style={styles.rowDivider} />
       <View style={styles.row}>
@@ -51,7 +52,7 @@ export default function HUD() {
         {activeBuild ? (
           <>
             <Text style={[styles.buildText, activeBuild.status === "delayed" && styles.delayed]} numberOfLines={1}>
-              {activeBuild.status === "delayed" ? "Delayed: " : "Building: "}{activeBuild.cause.name}
+              {activeBuild.cause.emoji} {activeBuild.status === "delayed" ? "Delayed: " : ""}{activeBuild.cause.name}
             </Text>
             <Text style={styles.timer}>{formatTimeRemaining(activeBuild.completesAt)}</Text>
           </>

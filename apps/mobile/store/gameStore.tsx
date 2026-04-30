@@ -3,14 +3,20 @@ import React, {
   useContext,
   useReducer,
   useEffect,
+  useState,
   ReactNode,
 } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GRID } from "@/utils/gridMath";
+
+const STORAGE_KEY = "grove_game_state_v1";
 
 export type CauseItem = {
   id: string;
   name: string;
   icon: string;
+  emoji: string;
+  narrative: string;
   minuteCost: number;
   realDurationMs: number;
   impact: string;
@@ -40,6 +46,8 @@ type MoveMode = {
 
 type State = {
   minuteBalance: number;
+  screenTimeUsedMinutes: number;
+  screenTimeBudgetMinutes: number;
   activeBuilds: Build[];
   completedBuilds: Build[];
   streak: number;
@@ -61,15 +69,94 @@ type Action =
   | { type: "ENTER_MOVE_MODE"; buildId: string }
   | { type: "CANCEL_MOVE_MODE" }
   | { type: "MOVE_BUILD"; buildId: string; col: number; row: number }
-  | { type: "TICK" };
+  | { type: "EARN_MINUTES"; minutes: number }
+  | { type: "SET_MINUTE_BALANCE"; minutes: number }
+  | { type: "SET_SCREEN_TIME_USED"; usedMinutes: number }
+  | { type: "TICK" }
+  | { type: "HYDRATE"; state: State };
 
-const DEV_SPEED = __DEV__ ? 0.00005 : 1;
+// --- Serialization ---
+
+type SerializedBuild = Omit<Build, "startedAt" | "completesAt"> & {
+  startedAt: string;
+  completesAt: string;
+};
+
+type PersistedState = {
+  minuteBalance: number;
+  screenTimeUsedMinutes: number;
+  screenTimeBudgetMinutes: number;
+  activeBuilds: SerializedBuild[];
+  completedBuilds: SerializedBuild[];
+  streak: number;
+  algorithmRaids: number;
+};
+
+function deserializeBuild(b: SerializedBuild): Build {
+  return {
+    ...b,
+    startedAt: new Date(b.startedAt),
+    completesAt: new Date(b.completesAt),
+  };
+}
+
+function serializeState(state: State): PersistedState {
+  return {
+    minuteBalance: state.minuteBalance,
+    screenTimeUsedMinutes: state.screenTimeUsedMinutes,
+    screenTimeBudgetMinutes: state.screenTimeBudgetMinutes,
+    activeBuilds: state.activeBuilds.map((b) => ({
+      ...b,
+      startedAt: b.startedAt.toISOString(),
+      completesAt: b.completesAt.toISOString(),
+    })),
+    completedBuilds: state.completedBuilds.map((b) => ({
+      ...b,
+      startedAt: b.startedAt.toISOString(),
+      completesAt: b.completesAt.toISOString(),
+    })),
+    streak: state.streak,
+    algorithmRaids: state.algorithmRaids,
+  };
+}
+
+function deserializeState(persisted: PersistedState): State {
+  const now = Date.now();
+  const activeBuilds = persisted.activeBuilds.map(deserializeBuild);
+  const completedBuilds = persisted.completedBuilds.map(deserializeBuild);
+
+  // Auto-complete builds that finished while the app was closed
+  const stillActive: Build[] = [];
+  const newlyCompleted: Build[] = [];
+  for (const build of activeBuilds) {
+    if (build.status === "in_progress" && now >= build.completesAt.getTime()) {
+      newlyCompleted.push({ ...build, status: "complete" });
+    } else {
+      stillActive.push(build);
+    }
+  }
+
+  return {
+    ...initialState,
+    minuteBalance: persisted.minuteBalance,
+    screenTimeUsedMinutes: persisted.screenTimeUsedMinutes,
+    screenTimeBudgetMinutes: persisted.screenTimeBudgetMinutes,
+    activeBuilds: stillActive,
+    completedBuilds: [...completedBuilds, ...newlyCompleted],
+    streak: persisted.streak,
+    algorithmRaids: persisted.algorithmRaids,
+  };
+}
+
+const DEV_SPEED = __DEV__ ? 0.001 : 1;
 
 export const CAUSE_ITEMS: CauseItem[] = [
   {
     id: "puppy",
     name: "Shelter a Puppy",
     icon: "paw",
+    emoji: "🐾",
+    narrative: "Every minute you reclaim keeps a pup off the street.",
     minuteCost: 15,
     realDurationMs: 6 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Funds 1 day of shelter care",
@@ -79,6 +166,8 @@ export const CAUSE_ITEMS: CauseItem[] = [
     id: "family",
     name: "Feed a Family",
     icon: "restaurant-outline",
+    emoji: "🥗",
+    narrative: "A minute back from your screen means a meal on the table.",
     minuteCost: 10,
     realDurationMs: 12 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Provides a family meal",
@@ -88,6 +177,8 @@ export const CAUSE_ITEMS: CauseItem[] = [
     id: "bee",
     name: "Sow Bee Habitat",
     icon: "flower-outline",
+    emoji: "🌸",
+    narrative: "Reclaim your time. Restore the wild.",
     minuteCost: 5,
     realDurationMs: 18 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Plants 1m² of pollinator habitat",
@@ -97,6 +188,8 @@ export const CAUSE_ITEMS: CauseItem[] = [
     id: "ocean",
     name: "Collect Ocean Plastic",
     icon: "boat-outline",
+    emoji: "🌊",
+    narrative: "Your screen time, turned against plastic.",
     minuteCost: 8,
     realDurationMs: 24 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Removes 1kg of ocean plastic",
@@ -106,6 +199,8 @@ export const CAUSE_ITEMS: CauseItem[] = [
     id: "tree",
     name: "Plant a Sapling",
     icon: "leaf-outline",
+    emoji: "🌱",
+    narrative: "Minutes off your screen. Trees in the ground.",
     minuteCost: 5,
     realDurationMs: 2 * 24 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Plants a real tree",
@@ -115,6 +210,8 @@ export const CAUSE_ITEMS: CauseItem[] = [
     id: "coral",
     name: "Rescue a Coral",
     icon: "fish-outline",
+    emoji: "🪸",
+    narrative: "The rarest build. The most endangered reef.",
     minuteCost: 20,
     realDurationMs: 5 * 24 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Restores a coral reef fragment",
@@ -139,6 +236,13 @@ function getAlgorithmDelayMs(minutesOver: number): number {
   return ms * DEV_SPEED;
 }
 
+export function formatMinutes(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
 export function formatTimeRemaining(completesAt: Date): string {
   const ms = completesAt.getTime() - Date.now();
   if (ms <= 0) return "Done!";
@@ -154,15 +258,25 @@ export function formatTimeRemaining(completesAt: Date): string {
 }
 
 /** Pick a random unoccupied grove cell. */
-function randomGroveCell(existingBuilds: Build[]): { col: number; row: number } {
-  const occupied = new Set(existingBuilds.map((b) => `${b.gridPos.col},${b.gridPos.row}`));
+function randomGroveCell(existingBuilds: Build[]): {
+  col: number;
+  row: number;
+} {
+  const occupied = new Set(
+    existingBuilds.map((b) => `${b.gridPos.col},${b.gridPos.row}`),
+  );
   const candidates: { col: number; row: number }[] = [];
   for (let row = 0; row <= GRID.GROVE_END_ROW; row++) {
     for (let col = 0; col < GRID.COLS; col++) {
       if (!occupied.has(`${col},${row}`)) candidates.push({ col, row });
     }
   }
-  return candidates[Math.floor(Math.random() * candidates.length)] ?? { col: 0, row: 0 };
+  return (
+    candidates[Math.floor(Math.random() * candidates.length)] ?? {
+      col: 0,
+      row: 0,
+    }
+  );
 }
 
 const initialPlacementMode: PlacementMode = {
@@ -175,6 +289,8 @@ const initialMoveMode: MoveMode = { active: false, buildId: null };
 
 const initialState: State = {
   minuteBalance: 46,
+  screenTimeUsedMinutes: 134,
+  screenTimeBudgetMinutes: 180,
   activeBuilds: [],
   completedBuilds: [],
   streak: 4,
@@ -213,7 +329,10 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         activeBuilds: [],
-        completedBuilds: [...state.completedBuilds, { ...build, status: "complete" }],
+        completedBuilds: [
+          ...state.completedBuilds,
+          { ...build, status: "complete" },
+        ],
       };
     }
     case "ALGORITHM_RAID": {
@@ -245,14 +364,21 @@ function reducer(state: State, action: Action): State {
       if (state.activeBuilds.length > 0) return state;
       return {
         ...state,
-        placementMode: { active: true, pendingCause: action.cause, selectedCell: null },
+        placementMode: {
+          active: true,
+          pendingCause: action.cause,
+          selectedCell: null,
+        },
       };
     }
     case "SELECT_CELL": {
       if (!state.placementMode.active) return state;
       return {
         ...state,
-        placementMode: { ...state.placementMode, selectedCell: { col: action.col, row: action.row } },
+        placementMode: {
+          ...state.placementMode,
+          selectedCell: { col: action.col, row: action.row },
+        },
       };
     }
     case "CONFIRM_PLACEMENT": {
@@ -293,13 +419,27 @@ function reducer(state: State, action: Action): State {
         completedBuilds: state.completedBuilds.map((b) =>
           b.id === action.buildId
             ? { ...b, gridPos: { col: action.col, row: action.row } }
-            : b
+            : b,
         ),
         moveMode: initialMoveMode,
       };
     }
+    case "EARN_MINUTES": {
+      return { ...state, minuteBalance: state.minuteBalance + action.minutes };
+    }
+    case "SET_MINUTE_BALANCE": {
+      return { ...state, minuteBalance: Math.max(0, action.minutes) };
+    }
+    case "SET_SCREEN_TIME_USED": {
+      return {
+        ...state,
+        screenTimeUsedMinutes: Math.max(0, action.usedMinutes),
+      };
+    }
     case "TICK":
       return { ...state };
+    case "HYDRATE":
+      return action.state;
     default:
       return state;
   }
@@ -312,13 +452,39 @@ const GameContext = createContext<{
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [hydrated, setHydrated] = useState(false);
 
+  // Load persisted state on mount
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY).then((raw: string | null) => {
+      if (raw) {
+        try {
+          const persisted: PersistedState = JSON.parse(raw);
+          dispatch({ type: "HYDRATE", state: deserializeState(persisted) });
+        } catch {
+          // Corrupted data — start fresh
+        }
+      }
+      setHydrated(true);
+    });
+  }, []);
+
+  // Save state whenever it changes (after hydration)
+  useEffect(() => {
+    if (!hydrated) return;
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(serializeState(state)));
+  }, [state, hydrated]);
+
+  // Game loop: check for completed builds every second
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
       let completed = false;
       state.activeBuilds.forEach((build) => {
-        if (build.status === "in_progress" && now >= build.completesAt.getTime()) {
+        if (
+          build.status === "in_progress" &&
+          now >= build.completesAt.getTime()
+        ) {
           dispatch({ type: "COMPLETE_BUILD", buildId: build.id });
           completed = true;
         }
@@ -327,6 +493,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }, 1000);
     return () => clearInterval(interval);
   }, [state.activeBuilds]);
+
+  if (!hydrated) return null;
 
   return (
     <GameContext.Provider value={{ state, dispatch }}>

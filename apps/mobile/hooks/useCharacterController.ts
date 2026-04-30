@@ -11,6 +11,7 @@ export type Direction = 'up' | 'down' | 'left' | 'right';
 
 const WALK_SPEED = 8;          // px per 50ms tick → ~160px/s
 const CELEBRATE_TICKS = 44;    // ~2.2s at 50ms
+const WANDER_IDLE_TICKS = 160; // ~8s idle before Grover wanders
 
 function getDirection(fromX: number, fromY: number, toX: number, toY: number): Direction {
   const dx = toX - fromX;
@@ -41,10 +42,21 @@ export function useCharacterController(
   const targetRef = useRef({ x: startX, y: startY });
   const animStateRef = useRef<AnimState>('idle');
   const celebTicksRef = useRef(0);
+  const idleTicksRef = useRef(0);
   const activeBuildIdRef = useRef<string | null>(null);
   const completedCountRef = useRef(0);
   const directionRef = useRef<Direction>('down');
   const walkModeRef = useRef<'build' | 'free'>('free');
+
+  // Refs for tileSize/offsets so the tick loop (empty deps) can access current values
+  const tileSizeRef = useRef(tileSize);
+  const gridOffsetXRef = useRef(gridOffsetX);
+  const gridOffsetYRef = useRef(gridOffsetY);
+  useEffect(() => {
+    tileSizeRef.current = tileSize;
+    gridOffsetXRef.current = gridOffsetX;
+    gridOffsetYRef.current = gridOffsetY;
+  }, [tileSize, gridOffsetX, gridOffsetY]);
 
   const { state } = useGame();
 
@@ -88,6 +100,20 @@ export function useCharacterController(
         return;
       }
 
+      if (animStateRef.current === 'idle') {
+        idleTicksRef.current += 1;
+        if (idleTicksRef.current >= WANDER_IDLE_TICKS) {
+          idleTicksRef.current = 0;
+          const col = Math.floor(Math.random() * GRID.COLS);
+          const row = Math.floor(Math.random() * (GRID.GROVE_END_ROW + 1));
+          const cell = cellToScreen(col, row, tileSizeRef.current, gridOffsetXRef.current, 0, gridOffsetYRef.current);
+          targetRef.current = { x: cell.x + tileSizeRef.current / 2, y: cell.y + tileSizeRef.current / 2 };
+          walkModeRef.current = 'free';
+          animStateRef.current = 'walking';
+          setAnimState('walking');
+        }
+      }
+
       if (animStateRef.current === 'walking') {
         const { x: px, y: py } = posRef.current;
         const { x: tx, y: ty } = targetRef.current;
@@ -100,6 +126,7 @@ export function useCharacterController(
           setPos({ x: tx, y: ty });
           const arrived = walkModeRef.current === 'build' ? 'working' : 'idle';
           animStateRef.current = arrived;
+          idleTicksRef.current = 0;
           setAnimState(arrived);
         } else {
           const nx = px + (dx / dist) * WALK_SPEED;

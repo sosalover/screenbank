@@ -1,6 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useGame, CAUSE_ITEMS, formatTimeRemaining } from "@/store/gameStore";
 
@@ -17,18 +16,18 @@ export default function CausesScreen() {
         <Text style={styles.title}>Causes</Text>
         <View style={styles.balanceBadge}>
           <Ionicons name="timer-outline" size={14} color="#166534" />
-          <Text style={styles.balanceText}>{state.minuteBalance} min</Text>
+          <Text style={styles.balanceText}>{state.minuteBalance}m reclaimed</Text>
         </View>
       </View>
-      <Text style={styles.subtitle}>Spend your reclaimed time on something real</Text>
+      <Text style={styles.subtitle}>Spend the time you've taken back on something real.</Text>
 
       {/* Active build */}
       {activeBuild && (
         <View style={[styles.activeBuildCard, activeBuild.status === "delayed" && styles.activeBuildDelayed]}>
-          <Ionicons name={activeBuild.cause.icon as any} size={36} color={activeBuild.status === "delayed" ? "#ef4444" : "#16a34a"} />
+          <Text style={{ fontSize: 36 }}>{activeBuild.cause.emoji}</Text>
           <View style={styles.activeBuildInfo}>
             <View style={styles.activeBuildTitleRow}>
-              <Ionicons name={activeBuild.status === "delayed" ? "eye" : "hammer-outline"} size={12} color="#6b7280" />
+              <Text style={{ fontSize: 12 }}>{activeBuild.status === "delayed" ? "👁" : "🔨"}</Text>
               <Text style={styles.activeBuildTitle}>
                 {activeBuild.status === "delayed" ? "Delayed by The Algorithm" : "In Progress"}
               </Text>
@@ -50,17 +49,13 @@ export default function CausesScreen() {
 
           return (
             <View key={cause.id} style={styles.card}>
-              <View style={styles.cardBody}>
-                <Ionicons name={cause.icon as any} size={32} color="#16a34a" style={styles.cardIcon} />
-                <Text style={styles.cardName}>{cause.name}</Text>
-                <Text style={styles.cardCharity}>{cause.charity}</Text>
-                <Text style={styles.cardImpact}>{cause.impact}</Text>
-              </View>
-              <View style={styles.cardMeta}>
-                <View style={styles.costRow}>
-                  <Ionicons name="timer-outline" size={12} color="#374151" />
-                  <Text style={styles.costText}>{cause.minuteCost} min</Text>
-                </View>
+              <Text style={styles.cardEmoji}>{cause.emoji}</Text>
+              <Text style={styles.cardNarrative}>{cause.narrative}</Text>
+              <Text style={styles.cardName}>{cause.name}</Text>
+              <Text style={styles.cardCharity}>{cause.charity}</Text>
+              <View style={styles.costRow}>
+                <Text style={styles.costText}>{cause.minuteCost}m</Text>
+                <Text style={styles.costLabel}> of your time</Text>
               </View>
               <TouchableOpacity
                 style={[styles.queueBtn, disabled && styles.queueBtnDisabled]}
@@ -74,8 +69,8 @@ export default function CausesScreen() {
                   {builderBusy
                     ? "Builder busy"
                     : canAfford
-                    ? "Queue"
-                    : `Need ${cause.minuteCost - state.minuteBalance} more min`}
+                    ? "Spend time →"
+                    : `Need ${cause.minuteCost - state.minuteBalance}m more`}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -140,13 +135,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  cardIcon: { marginBottom: 8 },
-  cardName: { fontSize: 14, fontWeight: "700", color: "#111", marginBottom: 2 },
-  cardCharity: { fontSize: 11, color: "#16a34a", fontWeight: "600", marginBottom: 4 },
-  cardImpact: { fontSize: 11, color: "#6b7280", marginBottom: 10, lineHeight: 15 },
-  cardMeta: { marginBottom: 10 },
-  costRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  costText: { fontSize: 12, fontWeight: "600", color: "#374151" },
+  cardEmoji: { fontSize: 32, marginBottom: 8 },
+  cardNarrative: { fontSize: 12, color: "#374151", lineHeight: 17, marginBottom: 8, fontStyle: "italic" },
+  cardName: { fontSize: 13, fontWeight: "700", color: "#111", marginBottom: 2 },
+  cardCharity: { fontSize: 11, color: "#16a34a", fontWeight: "600", marginBottom: 8 },
+  costRow: { flexDirection: "row", alignItems: "baseline", marginBottom: 10 },
+  costText: { fontSize: 14, fontWeight: "800", color: "#111" },
+  costLabel: { fontSize: 11, color: "#6b7280" },
   queueBtn: {
     backgroundColor: "#16a34a",
     borderRadius: 10,

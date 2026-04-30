@@ -1,5 +1,4 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface AlgorithmBannerProps {
@@ -11,12 +10,12 @@ export function AlgorithmBanner({ onDismiss }: AlgorithmBannerProps) {
 
   return (
     <View style={[styles.container, { top: top + 8 }]}>
-      <Ionicons name="eye" size={18} color="#e879f9" />
+      <Text style={{ fontSize: 18 }}>👁</Text>
       <Text style={styles.text} numberOfLines={2}>
-        The Algorithm is watching. Your build has been delayed.
+        You fed me today. Your build has been delayed.
       </Text>
       <TouchableOpacity onPress={onDismiss} style={styles.dismissBtn}>
-        <Text style={styles.dismissText}>Dismiss</Text>
+        <Text style={styles.dismissText}>Resist</Text>
       </TouchableOpacity>
     </View>
   );
