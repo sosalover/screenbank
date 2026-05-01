@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useGame } from '@/store/gameStore';
-import { cellToScreen, GRID } from '@/utils/gridMath';
+import { cellToScreen, GRID, HOME_COL, HOME_ROW } from '@/utils/gridMath';
 
 export type AnimState = 'idle' | 'walking' | 'working' | 'celebrating';
 export type Direction = 'up' | 'down' | 'left' | 'right';
@@ -60,12 +60,23 @@ export function useCharacterController(
 
   const { state } = useGame();
 
+  // Track occupied cells so wander avoids walking onto builds
+  const occupiedRef = useRef<Set<string>>(new Set([`${HOME_COL},${HOME_ROW}`]));
+  useEffect(() => {
+    const allBuilds = [...state.activeBuilds, ...state.completedBuilds];
+    const set = new Set(allBuilds.map((b) => `${b.gridPos.col},${b.gridPos.row}`));
+    set.add(`${HOME_COL},${HOME_ROW}`);
+    occupiedRef.current = set;
+  }, [state.activeBuilds, state.completedBuilds]);
+
   // Respond to new active builds → walk to the build cell
   useEffect(() => {
     const build = state.activeBuilds[0];
     if (build && build.id !== activeBuildIdRef.current) {
       activeBuildIdRef.current = build.id;
-      const cell = cellToScreen(build.gridPos.col, build.gridPos.row, tileSize, gridOffsetX, 0, gridOffsetY);
+      // Stand in the adjacent cell rather than on top of the build
+      const adjCol = build.gridPos.col < GRID.COLS - 1 ? build.gridPos.col + 1 : build.gridPos.col - 1;
+      const cell = cellToScreen(adjCol, build.gridPos.row, tileSize, gridOffsetX, 0, gridOffsetY);
       targetRef.current = { x: cell.x + tileSize / 2, y: cell.y + tileSize / 2 };
       walkModeRef.current = 'build';
       if (animStateRef.current !== 'celebrating') {
@@ -104,8 +115,18 @@ export function useCharacterController(
         idleTicksRef.current += 1;
         if (idleTicksRef.current >= WANDER_IDLE_TICKS) {
           idleTicksRef.current = 0;
-          const col = Math.floor(Math.random() * GRID.COLS);
-          const row = Math.floor(Math.random() * (GRID.GROVE_END_ROW + 1));
+          const goHome = Math.random() < 0.5;
+          let col = goHome ? HOME_COL : Math.floor(Math.random() * GRID.COLS);
+          let row = goHome ? HOME_ROW : Math.floor(Math.random() * (GRID.GROVE_END_ROW + 1));
+          // Retry until we find an unoccupied cell (or give up after 20 tries)
+          if (!goHome) {
+            let attempts = 0;
+            while (occupiedRef.current.has(`${col},${row}`) && attempts < 20) {
+              col = Math.floor(Math.random() * GRID.COLS);
+              row = Math.floor(Math.random() * (GRID.GROVE_END_ROW + 1));
+              attempts++;
+            }
+          }
           const cell = cellToScreen(col, row, tileSizeRef.current, gridOffsetXRef.current, 0, gridOffsetYRef.current);
           targetRef.current = { x: cell.x + tileSizeRef.current / 2, y: cell.y + tileSizeRef.current / 2 };
           walkModeRef.current = 'free';

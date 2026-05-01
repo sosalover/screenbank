@@ -38,7 +38,7 @@ export default function SetupScreen() {
         <Text style={{ color: "#ffffff", fontSize: 28, fontWeight: "800", marginBottom: 12 }}>
           Set your daily budget
         </Text>
-        <Text style={{ color: "#6b7280", fontSize: 16, lineHeight: 26, marginBottom: 48 }}>
+        <Text style={{ color: "#6b7280", fontSize: 16, lineHeight: 26, marginBottom: 32 }}>
           This is how much screen time you're allowing yourself per day. Stay under it and you earn that time back.
         </Text>
 
@@ -70,6 +70,10 @@ export default function SetupScreen() {
             );
           })}
         </View>
+
+        <Text style={{ color: "#6b7280", fontSize: 14, lineHeight: 22, marginTop: 20 }}>
+          Every minute you stay under this budget flows into Grover's Timebank — and Grover puts it to work.
+        </Text>
       </View>
 
       <TouchableOpacity

@@ -98,8 +98,10 @@ export function SkyLayer({
       />
       <Circle cx={width - 36} cy={28} r={sunR} color={sunColor} />
 
-      {/* "Grove" — rendered before clouds so they drift over it */}
-      <Text x={textX} y={textY} text="Grove" font={font} color={"#ffffff"} />
+      {/* "Grove" — hidden when algorithm banner is occupying that space */}
+      {!algorithmActive && (
+        <Text x={textX} y={textY} text="Grove" font={font} color={"#ffffff"} />
+      )}
 
       {/* Clouds */}
       {!algorithmActive &&

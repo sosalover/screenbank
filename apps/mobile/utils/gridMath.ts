@@ -16,6 +16,10 @@ export const OCEAN_CAUSE_IDS = new Set(['ocean', 'coral']);
 // Fixed sky header above the grid
 export const SKY_HEIGHT = 110;
 
+// Grover's permanent home cell — always occupied, never placeable
+export const HOME_COL = 5;
+export const HOME_ROW = 4;
+
 // ─── Tile sizing ───────────────────────────────────────────────────────────────
 
 /** Tile size derived from screen width so the grid fills edge-to-edge. */
@@ -96,9 +100,11 @@ export function isCellOccupied(
   return builds.some((b) => b.gridPos.col === col && b.gridPos.row === row);
 }
 
-/** Build a Set of "col,row" strings for O(1) lookup across many tiles. */
+/** Build a Set of "col,row" strings for O(1) lookup across many tiles. Always includes home cell. */
 export function buildOccupiedSet(
   builds: Array<{ gridPos: { col: number; row: number } }>,
 ): Set<string> {
-  return new Set(builds.map((b) => `${b.gridPos.col},${b.gridPos.row}`));
+  const set = new Set(builds.map((b) => `${b.gridPos.col},${b.gridPos.row}`));
+  set.add(`${HOME_COL},${HOME_ROW}`);
+  return set;
 }

@@ -3,7 +3,7 @@
 // All drawing is relative to (cx, cy) — the character's center.
 
 import React from 'react';
-import { Circle, RoundedRect, Rect, Group } from '@shopify/react-native-skia';
+import { Circle, RoundedRect, Rect, Group, Path, Skia } from '@shopify/react-native-skia';
 import { AnimState, Direction } from '@/hooks/useCharacterController';
 
 interface CharacterLayerProps {
@@ -20,10 +20,17 @@ export function CharacterLayer({ x, y, animState, direction, tick, tileSize }: C
 
   const headR  = s * 0.22;
   const bodyW  = s * 0.44;
-  const bodyH  = s * 0.38;
+  const bodyH  = s * 0.32; // shirt only — shorter to leave room for pants
   const legW   = s * 0.15;
   const legH   = s * 0.22;
   const legSep = s * 0.13;
+  const pantsH = s * 0.14; // waistband/trouser section below shirt
+
+  // Shovel dims
+  const handleW = s * 0.07;
+  const handleH = s * 0.36;
+  const bladeW  = s * 0.14;
+  const bladeH  = s * 0.09;
 
   const legSwing = animState === 'walking'
     ? Math.sin(tick * 0.55) * legH * 0.75
@@ -37,92 +44,176 @@ export function CharacterLayer({ x, y, animState, direction, tick, tileSize }: C
     ? Math.sin(tick * 0.09) * 3
     : 0;
 
-  const armSwing = animState === 'working'
-    ? Math.sin(tick * 0.38) * 0.75
-    : 0;
+  // Digging motion: shovel plunges forward (always same direction) and pulls back
+  // digPhase 0→1→0 drives both the forward lean and the downward push
+  const digPhase = animState === 'working' ? Math.abs(Math.sin(tick * 0.32)) : 0;
+  const shovelAngle = 0.15 + digPhase * 0.6;   // 0.15 (ready) → 0.75 (plunged in)
+  const shovelDigY  = digPhase * s * 0.07;      // slight downward push at peak
 
   const cx = x;
   const cy = y + bounceY + idleY;
 
-  const legBaseY = cy + bodyH * 0.28;
-  const headCY = cy - bodyH / 2 - headR * 0.65;
+  const shirtTop    = cy - bodyH / 2;
+  const shirtBottom = cy + bodyH / 2;
+  const pantsBottom = shirtBottom + pantsH;
+  const legBaseY    = shirtBottom + pantsH * 0.4;
+  const headCY      = shirtTop - headR * 0.65;
 
   // Pupil offset based on direction
   const pupilDX =
-    direction === 'right' ? headR * 0.07 :
+    direction === 'right' ?  headR * 0.07 :
     direction === 'left'  ? -headR * 0.07 : 0;
   const pupilDY =
-    direction === 'down' ? headR * 0.06 :
+    direction === 'down' ?  headR * 0.06 :
     direction === 'up'   ? -headR * 0.06 : headR * 0.02;
+
+  // Straw hat — trapezoidal crown (flat top platform, wider base)
+  const hatTopY      = headCY - headR * 2.4;
+  const hatBaseY     = headCY - headR * 0.75;
+  const hatTopHalfW  = headR * 0.52;  // narrow flat top
+  const hatBaseHalfW = headR * 1.05;  // wider base
+  const hatPath = Skia.Path.Make();
+  hatPath.moveTo(cx - hatTopHalfW, hatTopY);
+  hatPath.lineTo(cx + hatTopHalfW, hatTopY);
+  hatPath.lineTo(cx + hatBaseHalfW, hatBaseY);
+  hatPath.lineTo(cx - hatBaseHalfW, hatBaseY);
+  hatPath.close();
 
   return (
     <Group>
       {/* Ground shadow */}
       <Circle
         cx={cx}
-        cy={cy + bodyH * 0.55}
+        cy={pantsBottom + legH * 0.6}
         r={bodyW * 0.48}
         color="rgba(0,0,0,0.13)"
       />
 
-      {/* Left leg */}
+      {/* Legs — dark denim */}
       <RoundedRect
         x={cx - legSep - legW / 2}
         y={legBaseY + legSwing}
         width={legW}
         height={legH}
         r={legW / 2}
-        color="#3b5ea6"
+        color="#2d4a7a"
       />
-
-      {/* Right leg */}
       <RoundedRect
         x={cx + legSep - legW / 2}
         y={legBaseY - legSwing}
         width={legW}
         height={legH}
         r={legW / 2}
-        color="#3b5ea6"
+        color="#2d4a7a"
       />
 
-      {/* Body */}
+      {/* Pants / trouser waistband */}
       <RoundedRect
         x={cx - bodyW / 2}
-        y={cy - bodyH / 2}
+        y={shirtBottom - 1}
+        width={bodyW}
+        height={pantsH + 2}
+        r={3}
+        color="#2d4a7a"
+      />
+
+      {/* Shirt — blue */}
+      <RoundedRect
+        x={cx - bodyW / 2}
+        y={shirtTop}
         width={bodyW}
         height={bodyH}
         r={bodyW * 0.22}
         color="#5b9cf6"
       />
 
+      {/* Overall straps — red, run from shirt top down into pants */}
+      <RoundedRect
+        x={cx - bodyW * 0.26}
+        y={shirtTop + bodyH * 0.06}
+        width={bodyW * 0.13}
+        height={bodyH + pantsH * 0.7}
+        r={2}
+        color="#c0392b"
+      />
+      <RoundedRect
+        x={cx + bodyW * 0.13}
+        y={shirtTop + bodyH * 0.06}
+        width={bodyW * 0.13}
+        height={bodyH + pantsH * 0.7}
+        r={2}
+        color="#c0392b"
+      />
+      {/* Strap buttons */}
+      <Circle cx={cx - bodyW * 0.195} cy={shirtTop + bodyH * 0.14} r={bodyW * 0.045} color="#fff" />
+      <Circle cx={cx + bodyW * 0.195} cy={shirtTop + bodyH * 0.14} r={bodyW * 0.045} color="#fff" />
+
+      {/* Shovel — only when working */}
+      {animState === 'working' && (
+        <Group
+          transform={[
+            { translateX: cx + bodyW * 0.46 },
+            { translateY: cy - bodyH * 0.05 + shovelDigY },
+            { rotate: shovelAngle },
+          ]}
+        >
+          <RoundedRect
+            x={-handleW / 2}
+            y={-handleH * 0.3}
+            width={handleW}
+            height={handleH}
+            r={handleW / 2}
+            color="#6b4226"
+          />
+          <RoundedRect
+            x={-bladeW / 2}
+            y={handleH * 0.68}
+            width={bladeW}
+            height={bladeH}
+            r={3}
+            color="#94a3b8"
+          />
+          <Rect
+            x={-bladeW / 2 + 1}
+            y={handleH * 0.68 + 1}
+            width={bladeW * 0.35}
+            height={bladeH - 2}
+            color="rgba(255,255,255,0.3)"
+          />
+        </Group>
+      )}
+
       {/* Head */}
       <Circle cx={cx} cy={headCY} r={headR} color="#f5c5a3" />
 
-      {/* Farmer hat — crown */}
+      {/* Straw hat — triangular crown */}
+      <Path path={hatPath} color="#d4a420" />
+      {/* Hat shading on right side of crown */}
+      <Path path={(() => {
+        const p = Skia.Path.Make();
+        p.moveTo(cx + hatTopHalfW, hatTopY);
+        p.lineTo(cx + hatBaseHalfW, hatBaseY);
+        p.lineTo(cx, hatBaseY);
+        p.lineTo(cx, hatTopY);
+        p.close();
+        return p;
+      })()} color="rgba(0,0,0,0.1)" />
+      {/* Hat band */}
       <RoundedRect
-        x={cx - headR * 0.72}
-        y={headCY - headR * 1.72}
-        width={headR * 1.44}
-        height={headR * 0.9}
-        r={headR * 0.28}
-        color="#d4a420"
-      />
-      {/* Farmer hat — band */}
-      <RoundedRect
-        x={cx - headR * 0.72}
-        y={headCY - headR * 0.9}
-        width={headR * 1.44}
-        height={headR * 0.15}
+        x={cx - hatBaseHalfW + 1}
+        y={hatBaseY - headR * 0.2}
+        width={hatBaseHalfW * 2 - 2}
+        height={headR * 0.2}
         r={2}
         color="#7c5c1e"
       />
-      {/* Farmer hat — brim */}
+      {/* Brim — wide and flat */}
       <RoundedRect
-        x={cx - headR * 1.2}
-        y={headCY - headR * 0.88}
-        width={headR * 2.4}
-        height={headR * 0.28}
-        r={headR * 0.1}
+        x={cx - headR * 1.55}
+        y={hatBaseY - headR * 0.08}
+        width={headR * 3.1}
+        height={headR * 0.3}
+        r={headR * 0.15}
         color="#c8960c"
       />
 
@@ -134,7 +225,7 @@ export function CharacterLayer({ x, y, animState, direction, tick, tileSize }: C
       <Circle cx={cx - headR * 0.34} cy={headCY - headR * 0.08} r={headR * 0.2} color="white" />
       <Circle cx={cx + headR * 0.34} cy={headCY - headR * 0.08} r={headR * 0.2} color="white" />
 
-      {/* Pupils — shift based on direction */}
+      {/* Pupils */}
       <Circle
         cx={cx - headR * 0.34 + pupilDX}
         cy={headCY - headR * 0.08 + pupilDY}
@@ -155,20 +246,6 @@ export function CharacterLayer({ x, y, animState, direction, tick, tileSize }: C
           <Circle cx={cx + s * 0.24} cy={cy - s * 0.32} r={2.5} color="#fbbf24" />
           <Circle cx={cx + s * 0.1}  cy={cy - s * 0.38} r={2} color="#f472b6" />
           <Circle cx={cx - s * 0.12} cy={cy - s * 0.42} r={1.5} color="#34d399" />
-        </Group>
-      )}
-
-      {/* Work tool arm */}
-      {animState === 'working' && (
-        <Group
-          transform={[
-            { translateX: cx + bodyW * 0.38 },
-            { translateY: cy - bodyH * 0.1 },
-            { rotate: armSwing },
-          ]}
-        >
-          <RoundedRect x={-legW * 0.4} y={0} width={legW * 0.8} height={s * 0.18} r={2} color="#f5c5a3" />
-          <Rect x={-legW * 0.6} y={s * 0.15} width={legW * 1.2} height={legW * 0.7} color="#8B6914" />
         </Group>
       )}
     </Group>

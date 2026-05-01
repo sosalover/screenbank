@@ -1,7 +1,8 @@
 import React from 'react';
 import { Build } from '@/store/gameStore';
 import { ITEM_RENDERERS } from '@/renderers/registry';
-import { cellToScreen } from '@/utils/gridMath';
+import { cellToScreen, HOME_COL, HOME_ROW } from '@/utils/gridMath';
+import { HomeRenderer } from '@/renderers/items/HomeRenderer';
 
 interface ItemsLayerProps {
   builds: Build[];
@@ -12,8 +13,11 @@ interface ItemsLayerProps {
 }
 
 export function ItemsLayer({ builds, tileSize, gridOffsetX, gridOffsetY, panY = 0 }: ItemsLayerProps) {
+  const home = cellToScreen(HOME_COL, HOME_ROW, tileSize, gridOffsetX, panY, gridOffsetY);
+
   return (
     <>
+      <HomeRenderer x={home.x} y={home.y} size={tileSize} />
       {builds.map((build) => {
         if (!build.gridPos) return null;
         const Renderer = ITEM_RENDERERS[build.cause.id];

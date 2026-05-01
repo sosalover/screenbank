@@ -6,6 +6,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useEffect } from "react";
 import { GameProvider } from "@/store/gameStore";
 import { AuthProvider, useAuth } from "@/store/authStore";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 function RootNavigator() {
   const { session, loading, budgetMinutes } = useAuth();
@@ -42,7 +43,9 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AuthProvider>
           <GameProvider>
-            <RootNavigator />
+            <ThemeProvider>
+              <RootNavigator />
+            </ThemeProvider>
           </GameProvider>
         </AuthProvider>
       </SafeAreaProvider>

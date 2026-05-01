@@ -7,7 +7,7 @@ import React, {
   ReactNode,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { GRID } from "@/utils/gridMath";
+import { GRID, HOME_COL, HOME_ROW } from "@/utils/gridMath";
 
 const STORAGE_KEY = "grove_game_state_v1";
 
@@ -55,6 +55,7 @@ type State = {
   algorithmActive: boolean;
   placementMode: PlacementMode;
   moveMode: MoveMode;
+  tutorialComplete: boolean;
 };
 
 type Action =
@@ -73,6 +74,7 @@ type Action =
   | { type: "SET_MINUTE_BALANCE"; minutes: number }
   | { type: "SET_SCREEN_TIME_USED"; usedMinutes: number }
   | { type: "TICK" }
+  | { type: "COMPLETE_TUTORIAL" }
   | { type: "HYDRATE"; state: State };
 
 // --- Serialization ---
@@ -90,6 +92,7 @@ type PersistedState = {
   completedBuilds: SerializedBuild[];
   streak: number;
   algorithmRaids: number;
+  tutorialComplete: boolean;
 };
 
 function deserializeBuild(b: SerializedBuild): Build {
@@ -117,6 +120,7 @@ function serializeState(state: State): PersistedState {
     })),
     streak: state.streak,
     algorithmRaids: state.algorithmRaids,
+    tutorialComplete: state.tutorialComplete,
   };
 }
 
@@ -145,10 +149,11 @@ function deserializeState(persisted: PersistedState): State {
     completedBuilds: [...completedBuilds, ...newlyCompleted],
     streak: persisted.streak,
     algorithmRaids: persisted.algorithmRaids,
+    tutorialComplete: persisted.tutorialComplete ?? false,
   };
 }
 
-const DEV_SPEED = __DEV__ ? 0.001 : 1;
+const DEV_SPEED = __DEV__ ? 0.0001 : 1;
 
 export const CAUSE_ITEMS: CauseItem[] = [
   {
@@ -187,7 +192,7 @@ export const CAUSE_ITEMS: CauseItem[] = [
   {
     id: "ocean",
     name: "Collect Ocean Plastic",
-    icon: "boat-outline",
+    icon: "water-outline",
     emoji: "🌊",
     narrative: "Your screen time, turned against plastic.",
     minuteCost: 8,
@@ -268,6 +273,7 @@ function randomGroveCell(existingBuilds: Build[]): {
   const candidates: { col: number; row: number }[] = [];
   for (let row = 0; row <= GRID.GROVE_END_ROW; row++) {
     for (let col = 0; col < GRID.COLS; col++) {
+      if (col === HOME_COL && row === HOME_ROW) continue;
       if (!occupied.has(`${col},${row}`)) candidates.push({ col, row });
     }
   }
@@ -298,6 +304,7 @@ const initialState: State = {
   algorithmActive: false,
   placementMode: initialPlacementMode,
   moveMode: initialMoveMode,
+  tutorialComplete: false,
 };
 
 function reducer(state: State, action: Action): State {
@@ -438,6 +445,8 @@ function reducer(state: State, action: Action): State {
     }
     case "TICK":
       return { ...state };
+    case "COMPLETE_TUTORIAL":
+      return { ...state, tutorialComplete: true };
     case "HYDRATE":
       return action.state;
     default:

@@ -73,15 +73,18 @@ export function GroveScene() {
       return;
     }
 
-    // Normal: walk to tapped cell
-    const cellScreen = cellToScreen(cell.col, cell.row, tileSize, gridOffsetX, 0, gridOffsetY);
-    character.moveTo(cellScreen.x + tileSize / 2, cellScreen.y + tileSize / 2);
-
     // Inspect tapped build
     const build = allBuilds.find(
       (b) => b.gridPos.col === cell.col && b.gridPos.row === cell.row
     );
     if (build) setInspectedBuild(build);
+
+    // Walk to tapped cell — stand beside it if it's occupied
+    const walkCol = occupiedCells.has(`${cell.col},${cell.row}`)
+      ? (cell.col < GRID.COLS - 1 ? cell.col + 1 : cell.col - 1)
+      : cell.col;
+    const cellScreen = cellToScreen(walkCol, cell.row, tileSize, gridOffsetX, 0, gridOffsetY);
+    character.moveTo(cellScreen.x + tileSize / 2, cellScreen.y + tileSize / 2);
   }, [moveMode, movingBuild, placementMode, tileSize, gridOffsetX, gridOffsetY, occupiedCells, allBuilds, dispatch, character]);
 
   const handleLongPress = useCallback((x: number, y: number) => {
@@ -115,7 +118,7 @@ export function GroveScene() {
   const overlaySelectedCell = placementMode.active ? placementMode.selectedCell : null;
 
   return (
-    <View style={{ backgroundColor: '#0284c7' }}>
+    <View style={{ backgroundColor: algorithmActive ? '#0d0d1a' : '#0284c7' }}>
       <GestureDetector gesture={composed}>
         <Canvas style={{ width, height: gridOffsetY + GRID.ROWS * tileSize }}>
           <SkyLayer
