@@ -20,11 +20,11 @@ function StatCard({
   const s = makeStyles(theme);
   return (
     <View style={s.card}>
-      <Ionicons name={icon as any} size={18} color={iconColor} />
-      <View>
+      <View style={s.cardValueRow}>
+        <Ionicons name={icon as any} size={15} color={iconColor} />
         <Text style={s.cardValue}>{value}</Text>
-        <Text style={s.cardLabel}>{label}</Text>
       </View>
+      <Text style={s.cardLabel}>{label}</Text>
     </View>
   );
 }
@@ -39,9 +39,9 @@ export default function HUD() {
   return (
     <View style={s.container}>
       <View style={s.row}>
-        <StatCard icon="timer-outline" iconColor={theme.accent} value={`${state.minuteBalance}m`} label="Grover's Timebank" theme={theme} />
+        <StatCard icon="flash-outline" iconColor={theme.accent} value={`${state.sparkBalance ?? 0} Sparks`} label="Grover's Timebank" theme={theme} />
         <View style={s.cardDivider} />
-        <StatCard icon="phone-portrait-outline" iconColor="#0369a1" value={formatMinutes(minutesLeft)} label="left today" theme={theme} />
+        <StatCard icon="phone-portrait-outline" iconColor="#0369a1" value={formatMinutes(minutesLeft)} label="screen time left today" theme={theme} />
       </View>
       <View style={s.rowDivider} />
       <View style={s.row}>
@@ -88,10 +88,15 @@ function makeStyles(theme: AppTheme) {
     },
     card: {
       flex: 1,
-      flexDirection: "row" as const,
+      flexDirection: "column" as const,
       alignItems: "center" as const,
       justifyContent: "center" as const,
-      gap: 8,
+      gap: 2,
+    },
+    cardValueRow: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 4,
     },
     cardDivider: {
       width: 1,

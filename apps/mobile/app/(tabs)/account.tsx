@@ -1,10 +1,11 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Alert, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useGame, formatTimeRemaining } from "@/store/gameStore";
 import { useAuth } from "@/store/authStore";
 import { useTheme } from "@/context/ThemeContext";
 import { AppTheme } from "@/constants/theme";
+import { useState } from "react";
 
 function formatDate(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -12,9 +13,17 @@ function formatDate(date: Date) {
 
 export default function AccountScreen() {
   const { state } = useGame();
-  const { signOut } = useAuth();
+  const { signOut, displayName, setDisplayName } = useAuth();
   const { theme } = useTheme();
   const s = makeStyles(theme);
+  const [nameInput, setNameInput] = useState(displayName);
+  const [nameSaved, setNameSaved] = useState(false);
+
+  async function handleSaveName() {
+    await setDisplayName(nameInput.trim());
+    setNameSaved(true);
+    setTimeout(() => setNameSaved(false), 2000);
+  }
 
   function handleSignOut() {
     Alert.alert("Sign out", "Are you sure?", [
@@ -23,6 +32,10 @@ export default function AccountScreen() {
     ]);
   }
   const { completedBuilds, activeBuilds } = state;
+
+  const totalMinutesSaved = (state.sparkBalance ?? 0)
+    + completedBuilds.reduce((sum, b) => sum + (b.cause.sparkCost ?? (b.cause as any).minuteCost ?? 0), 0)
+    + activeBuilds.reduce((sum, b) => sum + (b.cause.sparkCost ?? (b.cause as any).minuteCost ?? 0), 0);
 
   const impact: Record<string, number> = {};
   completedBuilds.forEach((b) => {
@@ -37,14 +50,26 @@ export default function AccountScreen() {
         <View style={s.avatar}>
           <Ionicons name="person-circle" size={40} color={theme.accent} />
         </View>
-        <View style={{ gap: 4 }}>
-          <Text style={s.name}>Alex</Text>
+        <View style={{ gap: 4, flex: 1 }}>
+          <View style={s.nameRow}>
+            <TextInput
+              style={s.nameInput}
+              value={nameInput}
+              onChangeText={setNameInput}
+              onEndEditing={handleSaveName}
+              placeholder="Your name"
+              placeholderTextColor={theme.textMuted}
+              returnKeyType="done"
+              onSubmitEditing={handleSaveName}
+            />
+            {nameSaved && <Text style={s.nameSaved}>Saved</Text>}
+          </View>
           <View style={s.statRow}>
             <Ionicons name="flame" size={13} color={theme.textMuted} />
             <Text style={s.subtitle}>{state.streak} day streak</Text>
             <Text style={s.dot}>·</Text>
             <Ionicons name="timer-outline" size={13} color={theme.textMuted} />
-            <Text style={s.subtitle}>{state.minuteBalance} min saved</Text>
+            <Text style={s.subtitle}>{totalMinutesSaved} min reclaimed all time</Text>
           </View>
           {state.algorithmRaids > 0 && (
             <View style={s.statRow}>
@@ -108,7 +133,7 @@ export default function AccountScreen() {
                 <Text style={s.historyCharity}>{build.cause.charity}</Text>
                 <Text style={s.historyDate}>{formatDate(build.startedAt)}</Text>
               </View>
-              <Text style={s.historyCost}>−⏱ {build.cause.minuteCost}</Text>
+              <Text style={s.historyCost}>−{build.cause.sparkCost} ⚡</Text>
             </View>
           ))
         )}
@@ -141,7 +166,16 @@ function makeStyles(theme: AppTheme) {
       alignItems: "center" as const,
       justifyContent: "center" as const,
     },
-    name: { fontSize: 22, fontWeight: "800" as const, color: theme.textPrimary, fontFamily: theme.fontBody },
+    nameRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8 },
+    nameInput: {
+      fontSize: 22,
+      fontWeight: "800" as const,
+      color: theme.textPrimary,
+      fontFamily: theme.fontBody,
+      flex: 1,
+      padding: 0,
+    },
+    nameSaved: { fontSize: 12, color: theme.accent, fontFamily: theme.fontBody },
     statRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4 },
     dot: { fontSize: 13, color: theme.divider },
     subtitle: { fontSize: 13, color: theme.textMuted, fontFamily: theme.fontBody },

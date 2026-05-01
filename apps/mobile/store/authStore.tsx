@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { createProfileIfNotExists } from "@/lib/db";
 
 type AuthContextType = {
   session: Session | null;
   loading: boolean;
   budgetMinutes: number | null;
+  displayName: string;
   setBudgetMinutes: (minutes: number) => Promise<void>;
+  setDisplayName: (name: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -22,21 +25,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      if (event === "SIGNED_IN" && session?.user) {
+        const nextMonth = new Date();
+        nextMonth.setDate(1);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        nextMonth.setHours(0, 0, 0, 0);
+        createProfileIfNotExists(session.user.id, nextMonth.toISOString());
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Budget is stored in user metadata so we don't need a DB table yet
+  // Metadata fields stored in user metadata
   const budgetMinutes = session?.user?.user_metadata?.screen_time_budget_minutes ?? null;
+  const displayName: string = session?.user?.user_metadata?.display_name ?? '';
 
   async function setBudgetMinutes(minutes: number) {
     await supabase.auth.updateUser({
       data: { screen_time_budget_minutes: minutes },
     });
-    // Refresh session so metadata updates locally
+    const { data } = await supabase.auth.refreshSession();
+    if (data.session) setSession(data.session);
+  }
+
+  async function setDisplayName(name: string) {
+    await supabase.auth.updateUser({ data: { display_name: name } });
     const { data } = await supabase.auth.refreshSession();
     if (data.session) setSession(data.session);
   }
@@ -46,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, loading, budgetMinutes, setBudgetMinutes, signOut }}>
+    <AuthContext.Provider value={{ session, loading, budgetMinutes, displayName, setBudgetMinutes, setDisplayName, signOut }}>
       {children}
     </AuthContext.Provider>
   );

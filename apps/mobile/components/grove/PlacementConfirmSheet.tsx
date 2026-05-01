@@ -29,7 +29,7 @@ export function PlacementConfirmSheet({ cause, cell, onConfirm, onCancel }: Plac
       <View style={styles.meta}>
         <View style={styles.metaItem}>
           <Ionicons name="timer-outline" size={14} color="#6b7280" />
-          <Text style={styles.metaText}>{cause.minuteCost} min</Text>
+          <Text style={styles.metaText}>{cause.sparkCost} Sparks</Text>
         </View>
       </View>
       <TouchableOpacity style={styles.confirmBtn} onPress={onConfirm}>

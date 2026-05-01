@@ -21,7 +21,7 @@ export default function CausesScreen() {
         <Text style={s.title}>Causes</Text>
         <View style={s.balanceBadge}>
           <Ionicons name="timer-outline" size={14} color={theme.textAccent} />
-          <Text style={s.balanceText}>{state.minuteBalance}m in Timebank</Text>
+          <Text style={s.balanceText}>{state.sparkBalance ?? 0} Sparks in Timebank</Text>
         </View>
       </View>
       <Text style={s.subtitle}>Spend the time you've taken back on something real.</Text>
@@ -48,7 +48,7 @@ export default function CausesScreen() {
       {/* Cause grid */}
       <View style={s.grid}>
         {CAUSE_ITEMS.map((cause) => {
-          const canAfford = state.minuteBalance >= cause.minuteCost;
+          const canAfford = state.sparkBalance >= cause.sparkCost;
           const builderBusy = state.activeBuilds.length > 0;
           const disabled = !canAfford || builderBusy;
 
@@ -59,7 +59,7 @@ export default function CausesScreen() {
               <Text style={s.cardName}>{cause.name}</Text>
               <Text style={s.cardCharity}>{cause.charity}</Text>
               <View style={s.costRow}>
-                <Text style={s.costText}>Costs Grover {cause.minuteCost}m</Text>
+                <Text style={s.costText}>Costs {cause.sparkCost} Sparks</Text>
               </View>
               <TouchableOpacity
                 style={[s.queueBtn, disabled && s.queueBtnDisabled]}
@@ -69,12 +69,12 @@ export default function CausesScreen() {
                 }}
                 disabled={disabled}
               >
-                <Text style={[s.queueBtnText, disabled && s.queueBtnTextDisabled]}>
+                <Text style={[s.queueBtnText, disabled && s.queueBtnTextDisabled]} numberOfLines={1} adjustsFontSizeToFit>
                   {builderBusy
                     ? "Builder busy"
                     : canAfford
-                    ? `Fund with ${cause.minuteCost}m →`
-                    : `Need ${cause.minuteCost - state.minuteBalance}m more`}
+                    ? `Fund with ${cause.sparkCost} Sparks →`
+                    : `Need ${cause.sparkCost - (state.sparkBalance ?? 0)} more Sparks`}
                 </Text>
               </TouchableOpacity>
             </View>

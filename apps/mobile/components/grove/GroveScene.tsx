@@ -232,12 +232,12 @@ export function GroveScene() {
             </TouchableOpacity>
           </View>
           <View style={styles.devRow}>
-            <Text style={styles.devLabel}>Tokens</Text>
-            <TouchableOpacity style={styles.devSmallBtn} onPress={() => dispatch({ type: 'SET_MINUTE_BALANCE', minutes: state.minuteBalance - 10 })}>
+            <Text style={styles.devLabel}>Sparks</Text>
+            <TouchableOpacity style={styles.devSmallBtn} onPress={() => dispatch({ type: 'SET_SPARK_BALANCE', sparks: (state.sparkBalance ?? 0) - 1000 })}>
               <Text style={styles.devBtnText}>-</Text>
             </TouchableOpacity>
-            <Text style={styles.devValue}>{state.minuteBalance}m</Text>
-            <TouchableOpacity style={styles.devSmallBtn} onPress={() => dispatch({ type: 'SET_MINUTE_BALANCE', minutes: state.minuteBalance + 10 })}>
+            <Text style={styles.devValue}>{state.sparkBalance ?? 0}</Text>
+            <TouchableOpacity style={styles.devSmallBtn} onPress={() => dispatch({ type: 'SET_SPARK_BALANCE', sparks: (state.sparkBalance ?? 0) + 1000 })}>
               <Text style={styles.devBtnText}>+</Text>
             </TouchableOpacity>
           </View>

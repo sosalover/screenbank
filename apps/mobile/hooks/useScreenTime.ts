@@ -6,7 +6,7 @@ import { useGame } from '@/store/gameStore';
 /**
  * Handles the full screen time lifecycle:
  * 1. Requests authorization on first mount
- * 2. On each app foreground: checks for pending earned minutes and claims them
+ * 2. On each app foreground: checks for pending earned sparks and claims them
  * 3. Exposes helpers for the settings screen (set budget, etc.)
  */
 export function useScreenTime() {
@@ -16,7 +16,7 @@ export function useScreenTime() {
     try {
       const data = ScreenTime.getStoredData();
       if (data.pendingEarnedMinutes > 0) {
-        dispatch({ type: 'EARN_MINUTES', minutes: data.pendingEarnedMinutes });
+        dispatch({ type: 'EARN_SPARKS', sparks: data.pendingEarnedMinutes });
         ScreenTime.clearPendingEarnings();
       }
     } catch {

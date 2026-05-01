@@ -3,13 +3,16 @@ import React, {
   useContext,
   useReducer,
   useEffect,
+  useRef,
   useState,
   ReactNode,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GRID, HOME_COL, HOME_ROW } from "@/utils/gridMath";
+import { recordCompletedBuild, flushPendingWrites } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 
-const STORAGE_KEY = "grove_game_state_v1";
+const STORAGE_KEY = "grove_game_state_v2";
 
 export type CauseItem = {
   id: string;
@@ -17,10 +20,11 @@ export type CauseItem = {
   icon: string;
   emoji: string;
   narrative: string;
-  minuteCost: number;
+  sparkCost: number;
   realDurationMs: number;
   impact: string;
   charity: string;
+  donationUsd: number;
 };
 
 export type Build = {
@@ -45,7 +49,7 @@ type MoveMode = {
 };
 
 type State = {
-  minuteBalance: number;
+  sparkBalance: number;
   screenTimeUsedMinutes: number;
   screenTimeBudgetMinutes: number;
   activeBuilds: Build[];
@@ -56,6 +60,8 @@ type State = {
   placementMode: PlacementMode;
   moveMode: MoveMode;
   tutorialComplete: boolean;
+  monthlyDonated: number;
+  budgetResetAt: string;
 };
 
 type Action =
@@ -70,8 +76,8 @@ type Action =
   | { type: "ENTER_MOVE_MODE"; buildId: string }
   | { type: "CANCEL_MOVE_MODE" }
   | { type: "MOVE_BUILD"; buildId: string; col: number; row: number }
-  | { type: "EARN_MINUTES"; minutes: number }
-  | { type: "SET_MINUTE_BALANCE"; minutes: number }
+  | { type: "EARN_SPARKS"; sparks: number }
+  | { type: "SET_SPARK_BALANCE"; sparks: number }
   | { type: "SET_SCREEN_TIME_USED"; usedMinutes: number }
   | { type: "TICK" }
   | { type: "COMPLETE_TUTORIAL" }
@@ -85,7 +91,7 @@ type SerializedBuild = Omit<Build, "startedAt" | "completesAt"> & {
 };
 
 type PersistedState = {
-  minuteBalance: number;
+  sparkBalance: number;
   screenTimeUsedMinutes: number;
   screenTimeBudgetMinutes: number;
   activeBuilds: SerializedBuild[];
@@ -93,6 +99,8 @@ type PersistedState = {
   streak: number;
   algorithmRaids: number;
   tutorialComplete: boolean;
+  monthlyDonated: number;
+  budgetResetAt: string;
 };
 
 function deserializeBuild(b: SerializedBuild): Build {
@@ -105,7 +113,7 @@ function deserializeBuild(b: SerializedBuild): Build {
 
 function serializeState(state: State): PersistedState {
   return {
-    minuteBalance: state.minuteBalance,
+    sparkBalance: state.sparkBalance,
     screenTimeUsedMinutes: state.screenTimeUsedMinutes,
     screenTimeBudgetMinutes: state.screenTimeBudgetMinutes,
     activeBuilds: state.activeBuilds.map((b) => ({
@@ -121,6 +129,8 @@ function serializeState(state: State): PersistedState {
     streak: state.streak,
     algorithmRaids: state.algorithmRaids,
     tutorialComplete: state.tutorialComplete,
+    monthlyDonated: state.monthlyDonated,
+    budgetResetAt: state.budgetResetAt,
   };
 }
 
@@ -142,7 +152,7 @@ function deserializeState(persisted: PersistedState): State {
 
   return {
     ...initialState,
-    minuteBalance: persisted.minuteBalance,
+    sparkBalance: persisted.sparkBalance,
     screenTimeUsedMinutes: persisted.screenTimeUsedMinutes,
     screenTimeBudgetMinutes: persisted.screenTimeBudgetMinutes,
     activeBuilds: stillActive,
@@ -150,44 +160,42 @@ function deserializeState(persisted: PersistedState): State {
     streak: persisted.streak,
     algorithmRaids: persisted.algorithmRaids,
     tutorialComplete: persisted.tutorialComplete ?? false,
+    monthlyDonated: persisted.monthlyDonated ?? 0,
+    budgetResetAt: persisted.budgetResetAt ?? nextMonthReset(),
   };
 }
 
 const DEV_SPEED = __DEV__ ? 0.0001 : 1;
 
+function nextMonthReset(): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+}
+
 export const CAUSE_ITEMS: CauseItem[] = [
+  {
+    id: "tree",
+    name: "Plant a Sapling",
+    icon: "leaf-outline",
+    emoji: "🌱",
+    narrative: "Minutes off your screen. Trees in the ground.",
+    sparkCost: 2160,
+    realDurationMs: 1 * 60 * 60 * 1000 * DEV_SPEED,
+    impact: "Plants a real tree",
+    charity: "One Tree Planted",
+    donationUsd: 1.00,
+  },
   {
     id: "puppy",
     name: "Shelter a Puppy",
     icon: "paw",
     emoji: "🐾",
-    narrative: "Every minute you reclaim keeps a pup off the street.",
-    minuteCost: 15,
-    realDurationMs: 6 * 60 * 60 * 1000 * DEV_SPEED,
+    narrative: "Every spark you earn keeps a pup off the street.",
+    sparkCost: 4320,
+    realDurationMs: 2 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Funds 1 day of shelter care",
     charity: "ASPCA",
-  },
-  {
-    id: "family",
-    name: "Feed a Family",
-    icon: "restaurant-outline",
-    emoji: "🥗",
-    narrative: "A minute back from your screen means a meal on the table.",
-    minuteCost: 10,
-    realDurationMs: 12 * 60 * 60 * 1000 * DEV_SPEED,
-    impact: "Provides a family meal",
-    charity: "Feeding America",
-  },
-  {
-    id: "bee",
-    name: "Sow Bee Habitat",
-    icon: "flower-outline",
-    emoji: "🌸",
-    narrative: "Reclaim your time. Restore the wild.",
-    minuteCost: 5,
-    realDurationMs: 18 * 60 * 60 * 1000 * DEV_SPEED,
-    impact: "Plants 1m² of pollinator habitat",
-    charity: "Xerces Society",
+    donationUsd: 2.00,
   },
   {
     id: "ocean",
@@ -195,21 +203,23 @@ export const CAUSE_ITEMS: CauseItem[] = [
     icon: "water-outline",
     emoji: "🌊",
     narrative: "Your screen time, turned against plastic.",
-    minuteCost: 8,
-    realDurationMs: 24 * 60 * 60 * 1000 * DEV_SPEED,
-    impact: "Removes 1kg of ocean plastic",
+    sparkCost: 4320,
+    realDurationMs: 2 * 60 * 60 * 1000 * DEV_SPEED,
+    impact: "Removes 1 lb of ocean plastic",
     charity: "Ocean Conservancy",
+    donationUsd: 2.00,
   },
   {
-    id: "tree",
-    name: "Plant a Sapling",
-    icon: "leaf-outline",
-    emoji: "🌱",
-    narrative: "Minutes off your screen. Trees in the ground.",
-    minuteCost: 5,
-    realDurationMs: 2 * 24 * 60 * 60 * 1000 * DEV_SPEED,
-    impact: "Plants a real tree",
-    charity: "One Tree Planted",
+    id: "bee",
+    name: "Save a Bee Hive",
+    icon: "flower-outline",
+    emoji: "🌸",
+    narrative: "Reclaim your time. Restore the wild.",
+    sparkCost: 10800,
+    realDurationMs: 5 * 60 * 60 * 1000 * DEV_SPEED,
+    impact: "Funds 1 bee hive habitat",
+    charity: "Xerces Society",
+    donationUsd: 5.00,
   },
   {
     id: "coral",
@@ -217,10 +227,11 @@ export const CAUSE_ITEMS: CauseItem[] = [
     icon: "fish-outline",
     emoji: "🪸",
     narrative: "The rarest build. The most endangered reef.",
-    minuteCost: 20,
-    realDurationMs: 5 * 24 * 60 * 60 * 1000 * DEV_SPEED,
+    sparkCost: 21600,
+    realDurationMs: 10 * 60 * 60 * 1000 * DEV_SPEED,
     impact: "Restores a coral reef fragment",
     charity: "Coral Restoration Foundation",
+    donationUsd: 10.00,
   },
 ];
 
@@ -228,7 +239,7 @@ export const MOCK_SCREEN_TIME = {
   todayUsed: "2h 14m",
   budget: "3h 0m",
   remaining: "46m",
-  minutesEarned: 46,
+  sparksEarned: 46,
   avgScreenTime: "3h 42m",
   streak: 4,
 };
@@ -294,7 +305,7 @@ const initialPlacementMode: PlacementMode = {
 const initialMoveMode: MoveMode = { active: false, buildId: null };
 
 const initialState: State = {
-  minuteBalance: 46,
+  sparkBalance: 46,
   screenTimeUsedMinutes: 134,
   screenTimeBudgetMinutes: 180,
   activeBuilds: [],
@@ -305,12 +316,14 @@ const initialState: State = {
   placementMode: initialPlacementMode,
   moveMode: initialMoveMode,
   tutorialComplete: false,
+  monthlyDonated: 0,
+  budgetResetAt: nextMonthReset(),
 };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "QUEUE_BUILD": {
-      if (state.minuteBalance < action.cause.minuteCost) return state;
+      if (state.sparkBalance < action.cause.sparkCost) return state;
       if (state.activeBuilds.length > 0) return state;
       const allBuilds = [...state.activeBuilds, ...state.completedBuilds];
       const gridPos = randomGroveCell(allBuilds);
@@ -326,13 +339,19 @@ function reducer(state: State, action: Action): State {
       };
       return {
         ...state,
-        minuteBalance: state.minuteBalance - action.cause.minuteCost,
+        sparkBalance: state.sparkBalance - action.cause.sparkCost,
         activeBuilds: [build],
       };
     }
     case "COMPLETE_BUILD": {
       const build = state.activeBuilds.find((b) => b.id === action.buildId);
       if (!build) return state;
+      const now = new Date();
+      const resetAt = new Date(state.budgetResetAt);
+      const monthlyDonated = now >= resetAt
+        ? build.cause.donationUsd
+        : state.monthlyDonated + build.cause.donationUsd;
+      const budgetResetAt = now >= resetAt ? nextMonthReset() : state.budgetResetAt;
       return {
         ...state,
         activeBuilds: [],
@@ -340,6 +359,8 @@ function reducer(state: State, action: Action): State {
           ...state.completedBuilds,
           { ...build, status: "complete" },
         ],
+        monthlyDonated,
+        budgetResetAt,
       };
     }
     case "ALGORITHM_RAID": {
@@ -367,7 +388,7 @@ function reducer(state: State, action: Action): State {
       };
     }
     case "ENTER_PLACEMENT_MODE": {
-      if (state.minuteBalance < action.cause.minuteCost) return state;
+      if (state.sparkBalance < action.cause.sparkCost) return state;
       if (state.activeBuilds.length > 0) return state;
       return {
         ...state,
@@ -391,7 +412,7 @@ function reducer(state: State, action: Action): State {
     case "CONFIRM_PLACEMENT": {
       const { pendingCause, selectedCell } = state.placementMode;
       if (!pendingCause || !selectedCell) return state;
-      if (state.minuteBalance < pendingCause.minuteCost) return state;
+      if (state.sparkBalance < pendingCause.sparkCost) return state;
       const now = new Date();
       const build: Build = {
         id: `${pendingCause.id}-${Date.now()}`,
@@ -404,7 +425,7 @@ function reducer(state: State, action: Action): State {
       };
       return {
         ...state,
-        minuteBalance: state.minuteBalance - pendingCause.minuteCost,
+        sparkBalance: state.sparkBalance - pendingCause.sparkCost,
         activeBuilds: [build],
         placementMode: initialPlacementMode,
       };
@@ -431,11 +452,11 @@ function reducer(state: State, action: Action): State {
         moveMode: initialMoveMode,
       };
     }
-    case "EARN_MINUTES": {
-      return { ...state, minuteBalance: state.minuteBalance + action.minutes };
+    case "EARN_SPARKS": {
+      return { ...state, sparkBalance: state.sparkBalance + action.sparks };
     }
-    case "SET_MINUTE_BALANCE": {
-      return { ...state, minuteBalance: Math.max(0, action.minutes) };
+    case "SET_SPARK_BALANCE": {
+      return { ...state, sparkBalance: Math.max(0, isNaN(action.sparks) ? 0 : action.sparks) };
     }
     case "SET_SCREEN_TIME_USED": {
       return {
@@ -462,6 +483,7 @@ const GameContext = createContext<{
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [hydrated, setHydrated] = useState(false);
+  const prevActiveBuilds = useRef<Build[]>([]);
 
   // Load persisted state on mount
   useEffect(() => {
@@ -502,6 +524,38 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }, 1000);
     return () => clearInterval(interval);
   }, [state.activeBuilds]);
+
+  // Fire DB writes when a build completes
+  useEffect(() => {
+    if (!hydrated) return;
+    const prev = prevActiveBuilds.current;
+    const justCompleted = prev.filter(
+      (b) => !state.activeBuilds.find((a) => a.id === b.id)
+    );
+    for (const build of justCompleted) {
+      supabase.auth.getUser().then(({ data }) => {
+        const userId = data?.user?.id;
+        if (!userId) return;
+        const MONTHLY_BUDGET = 2.50; // base tier
+        const funded = state.monthlyDonated <= MONTHLY_BUDGET;
+        recordCompletedBuild(
+          userId,
+          { ...build, status: "complete" },
+          state.monthlyDonated,
+          state.budgetResetAt,
+          state.streak,
+          state.sparkBalance,
+          funded,
+        );
+      });
+    }
+    prevActiveBuilds.current = state.activeBuilds;
+  }, [state.activeBuilds, hydrated]);
+
+  // Flush any failed DB writes when app becomes active
+  useEffect(() => {
+    flushPendingWrites();
+  }, []);
 
   if (!hydrated) return null;
 
