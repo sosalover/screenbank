@@ -221,6 +221,12 @@ export function GroveScene() {
           >
             <Text style={styles.devBtnText}>Raid</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.devBtn, { backgroundColor: 'rgba(22,163,74,0.85)' }]}
+            onPress={() => dispatch({ type: 'RESET_TUTORIAL' })}
+          >
+            <Text style={styles.devBtnText}>Tutorial ↺</Text>
+          </TouchableOpacity>
           <View style={styles.devRow}>
             <Text style={styles.devLabel}>Screen</Text>
             <TouchableOpacity style={styles.devSmallBtn} onPress={() => dispatch({ type: 'SET_SCREEN_TIME_USED', usedMinutes: state.screenTimeUsedMinutes - 15 })}>

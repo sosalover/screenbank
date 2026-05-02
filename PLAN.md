@@ -255,6 +255,9 @@ export const MOCK_SCREEN_TIME = {
 - [ ] Sign in with Apple
 - [ ] Username/display name — set during signup or setup, stored in Supabase profile; required for friends/social features
 
+**Known bug: welcome screen swipe responsiveness**
+> The first slide (Algorithm) has intermittent swipe lag — consecutive fast swipes sometimes don't register. Slides 2 and 3 are unaffected. Root cause is unclear: the `SkyCanvas` tick interval is already isolated to prevent re-renders, and the `onScroll` Animated binding was removed. Suspected interaction between the Skia Canvas components (mounted but off-screen on slides 2/3) and the ScrollView's native gesture recognizer when at position x=0. Workaround: slow down and swipe will always work.
+
 **Deferred: email confirmation UX polish**
 > Email confirmation works — Supabase confirms on link click. The redirect currently lands on "localhost not found" in the browser (harmless).
 > When polishing, needs:

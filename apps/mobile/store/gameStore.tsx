@@ -81,6 +81,7 @@ type Action =
   | { type: "SET_SCREEN_TIME_USED"; usedMinutes: number }
   | { type: "TICK" }
   | { type: "COMPLETE_TUTORIAL" }
+  | { type: "RESET_TUTORIAL" }
   | { type: "HYDRATE"; state: State };
 
 // --- Serialization ---
@@ -468,6 +469,8 @@ function reducer(state: State, action: Action): State {
       return { ...state };
     case "COMPLETE_TUTORIAL":
       return { ...state, tutorialComplete: true };
+    case "RESET_TUTORIAL":
+      return { ...state, tutorialComplete: false };
     case "HYDRATE":
       return action.state;
     default:

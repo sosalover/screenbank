@@ -1,23 +1,29 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useGame } from '@/store/gameStore';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  useWindowDimensions,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useGame } from "@/store/gameStore";
 
 const STEPS = [
   {
-    title: 'Welcome to your Grove',
-    body: "This is where your reclaimed time comes to life. Every minute you spend off your phone builds something real here.",
+    title: "Welcome to your Grove",
+    body: "Every minute you spend under your daily budget earns you 1 Spark. Sparks power Grover's builds.",
   },
   {
-    title: "Grover's Timebank",
-    body: "Stay under your daily screen budget and Grover banks the difference as minutes. Those minutes are yours to spend.",
+    title: "Grover's Bank",
+    body: "Stay under your daily screen budget and Sparks flow into Grover's Timebank. Those Sparks are yours to spend.",
   },
   {
-    title: 'Fund Real Causes',
-    body: "Head to Causes and spend your minutes on things that matter — planting trees, sheltering animals, cleaning the ocean.",
+    title: "Fund Real Causes",
+    body: "Head to Causes and spend your Sparks on things that matter — planting trees, sheltering animals, cleaning the ocean.",
   },
   {
-    title: 'Grover Gets to Work',
+    title: "Grover Gets to Work",
     body: "Once you fund a cause, Grover builds it right here in the grove. Come back to see it grow.",
   },
 ];
@@ -33,7 +39,7 @@ export function TutorialOverlay() {
 
   function handleNext() {
     if (isLast) {
-      dispatch({ type: 'COMPLETE_TUTORIAL' });
+      dispatch({ type: "COMPLETE_TUTORIAL" });
     } else {
       setStep((s) => s + 1);
     }
@@ -45,19 +51,37 @@ export function TutorialOverlay() {
       <View style={styles.backdrop} pointerEvents="none" />
 
       {/* Card */}
-      <View style={[styles.card, { paddingBottom: bottom + 20, width: width - 32, alignSelf: 'center' }]}>
+      <View
+        style={[
+          styles.card,
+          {
+            paddingBottom: bottom + 20,
+            width: width - 32,
+            alignSelf: "center",
+          },
+        ]}
+      >
         <Text style={styles.title}>{current.title}</Text>
         <Text style={styles.body}>{current.body}</Text>
 
         {/* Step dots */}
         <View style={styles.dots}>
           {STEPS.map((_, i) => (
-            <View key={i} style={[styles.dot, i === step && styles.dotActive]} />
+            <View
+              key={i}
+              style={[styles.dot, i === step && styles.dotActive]}
+            />
           ))}
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleNext} activeOpacity={0.85}>
-          <Text style={styles.buttonText}>{isLast ? 'Start exploring →' : 'Next'}</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleNext}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.buttonText}>
+            {isLast ? "Start exploring →" : "Next"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -67,17 +91,17 @@ export function TutorialOverlay() {
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: "rgba(0,0,0,0.45)",
   },
   card: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 28,
     paddingHorizontal: 24,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.12,
     shadowRadius: 16,
@@ -85,21 +109,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
-    color: '#14532d',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#14532d",
+    textAlign: "center",
     marginBottom: 10,
   },
   body: {
     fontSize: 15,
-    color: '#374151',
-    textAlign: 'center',
+    color: "#374151",
+    textAlign: "center",
     lineHeight: 22,
     marginBottom: 24,
   },
   dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 6,
     marginBottom: 20,
   },
@@ -107,21 +131,21 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: '#d1fae5',
+    backgroundColor: "#d1fae5",
   },
   dotActive: {
-    backgroundColor: '#16a34a',
+    backgroundColor: "#16a34a",
     width: 20,
   },
   button: {
-    backgroundColor: '#16a34a',
+    backgroundColor: "#16a34a",
     borderRadius: 12,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });
