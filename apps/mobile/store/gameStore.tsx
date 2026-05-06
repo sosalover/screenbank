@@ -82,7 +82,15 @@ type Action =
   | { type: "TICK" }
   | { type: "COMPLETE_TUTORIAL" }
   | { type: "RESET_TUTORIAL" }
-  | { type: "HYDRATE"; state: State };
+  | { type: "HYDRATE"; state: State }
+  | {
+      type: "RESTORE";
+      sparkBalance: number;
+      streak: number;
+      monthlyDonated: number;
+      budgetResetAt: string;
+      completedBuilds: Build[];
+    };
 
 // --- Serialization ---
 
@@ -236,15 +244,6 @@ export const CAUSE_ITEMS: CauseItem[] = [
   },
 ];
 
-export const MOCK_SCREEN_TIME = {
-  todayUsed: "2h 14m",
-  budget: "3h 0m",
-  remaining: "46m",
-  sparksEarned: 46,
-  avgScreenTime: "3h 42m",
-  streak: 4,
-};
-
 function getAlgorithmDelayMs(minutesOver: number): number {
   let ms: number;
   if (minutesOver < 15) ms = 2 * 60 * 60 * 1000;
@@ -306,12 +305,12 @@ const initialPlacementMode: PlacementMode = {
 const initialMoveMode: MoveMode = { active: false, buildId: null };
 
 const initialState: State = {
-  sparkBalance: 46,
-  screenTimeUsedMinutes: 134,
+  sparkBalance: 0,
+  screenTimeUsedMinutes: 0,
   screenTimeBudgetMinutes: 180,
   activeBuilds: [],
   completedBuilds: [],
-  streak: 4,
+  streak: 0,
   algorithmRaids: 0,
   algorithmActive: false,
   placementMode: initialPlacementMode,
@@ -473,6 +472,15 @@ function reducer(state: State, action: Action): State {
       return { ...state, tutorialComplete: false };
     case "HYDRATE":
       return action.state;
+    case "RESTORE":
+      return {
+        ...state,
+        sparkBalance: action.sparkBalance,
+        streak: action.streak,
+        monthlyDonated: action.monthlyDonated,
+        budgetResetAt: action.budgetResetAt,
+        completedBuilds: action.completedBuilds,
+      };
     default:
       return state;
   }
@@ -483,9 +491,56 @@ const GameContext = createContext<{
   dispatch: React.Dispatch<Action>;
 } | null>(null);
 
+async function restoreFromServer(): Promise<{
+  sparkBalance: number;
+  streak: number;
+  monthlyDonated: number;
+  budgetResetAt: string;
+  completedBuilds: Build[];
+} | null> {
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData?.user?.id;
+  if (!userId) return null;
+
+  const [profileRes, buildsRes] = await Promise.all([
+    supabase.from("user_profiles").select("*").eq("id", userId).single(),
+    supabase.from("builds").select("*").eq("user_id", userId),
+  ]);
+
+  if (profileRes.error && profileRes.error.code !== "PGRST116") return null;
+
+  const profile = profileRes.data;
+  const rawBuilds = buildsRes.data ?? [];
+
+  const completedBuilds: Build[] = rawBuilds
+    .map((b) => {
+      const cause = CAUSE_ITEMS.find((c) => c.id === b.cause_id);
+      if (!cause) return null;
+      return {
+        id: b.id,
+        cause,
+        startedAt: new Date(b.started_at),
+        completesAt: new Date(b.completed_at),
+        delayedMs: 0,
+        status: "complete" as const,
+        gridPos: { col: b.grid_col, row: b.grid_row },
+      };
+    })
+    .filter((b): b is Build => b !== null);
+
+  return {
+    sparkBalance: profile?.total_sparks_earned ?? 0,
+    streak: profile?.streak ?? 0,
+    monthlyDonated: profile?.monthly_donated ?? 0,
+    budgetResetAt: profile?.budget_reset_at ?? nextMonthReset(),
+    completedBuilds,
+  };
+}
+
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [hydrated, setHydrated] = useState(false);
+  const [wasEmpty, setWasEmpty] = useState(false);
   const prevActiveBuilds = useRef<Build[]>([]);
 
   // Load persisted state on mount
@@ -496,12 +551,50 @@ export function GameProvider({ children }: { children: ReactNode }) {
           const persisted: PersistedState = JSON.parse(raw);
           dispatch({ type: "HYDRATE", state: deserializeState(persisted) });
         } catch {
-          // Corrupted data — start fresh
+          // Corrupted data — restore from server
+          setWasEmpty(true);
         }
+      } else {
+        setWasEmpty(true);
       }
       setHydrated(true);
     });
   }, []);
+
+  // No local state found — restore from Supabase (e.g. fresh install)
+  // Must wait for auth session to be available, so we try immediately and
+  // also listen for SIGNED_IN in case the session loads after hydration.
+  useEffect(() => {
+    if (!hydrated || !wasEmpty) return;
+
+    let done = false;
+    const tryRestore = () => {
+      if (done) return;
+      done = true;
+      restoreFromServer().then((restored) => {
+        if (restored) dispatch({ type: "RESTORE", ...restored });
+      });
+    };
+
+    // Session may already be loaded (returning user)
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) tryRestore();
+    });
+
+    // Session loads after hydration (fresh install, user signs in)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (
+          (event === "SIGNED_IN" || event === "INITIAL_SESSION") &&
+          session?.user
+        ) {
+          tryRestore();
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [hydrated, wasEmpty]);
 
   // Save state whenever it changes (after hydration)
   useEffect(() => {

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/store/authStore";
+import { useScreenTime } from "@/hooks/useScreenTime";
 import { groveTheme as t } from "@/constants/theme";
 
 const BUDGET_OPTIONS = [
@@ -15,12 +16,14 @@ const BUDGET_OPTIONS = [
 
 export default function SetupScreen() {
   const { setBudgetMinutes } = useAuth();
+  const { requestAndSetup } = useScreenTime();
   const [selected, setSelected] = useState(120);
   const [loading, setLoading] = useState(false);
 
   async function handleConfirm() {
     setLoading(true);
     await setBudgetMinutes(selected);
+    await requestAndSetup(selected);
     setLoading(false);
     router.replace("/(tabs)");
   }

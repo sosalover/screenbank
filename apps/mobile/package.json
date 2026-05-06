@@ -22,6 +22,7 @@
     "expo-constants": "~18.0.13",
     "expo-dev-client": "~6.0.20",
     "expo-linking": "~8.0.11",
+    "expo-notifications": "^0.32.17",
     "expo-router": "~6.0.23",
     "expo-secure-store": "~15.0.8",
     "expo-status-bar": "~3.0.9",
@@ -34,6 +35,7 @@
     "react-native-screens": "~4.16.0",
     "react-native-worklets": "^0.5.1",
     "react-refresh": "^0.18.0",
+    "screen-time": "file:./modules/screen-time",
     "whatwg-fetch": "^3.6.20"
   },
   "devDependencies": {

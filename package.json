@@ -2,6 +2,7 @@
   "name": "screenbank",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@10.0.0",
   "scripts": {
     "mobile": "turbo run start --filter=mobile",
     "build": "turbo run build",

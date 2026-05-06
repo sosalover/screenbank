@@ -3,20 +3,33 @@
 ---
 
 ## Notifications
-> `expo-notifications` not yet installed — add via `npx expo install expo-notifications`
+> `expo-notifications` installed (v0.32.17)
 
-- [ ] **Build completed** — push when `build.completesAt` passes; copy: "Grover finished planting your tree! Check your grove."; tap → grove screen
-- [ ] **Daily Sparks earned** — 8am push reporting yesterday's earnings if > 0; copy: "You earned 45 Sparks yesterday. Keep it up!"; tap → grove HUD
-- [ ] **New cause affordable** — fires once when Spark balance crosses a cause threshold; copy: "You now have enough Sparks to fund ocean cleanup!"; tap → causes tab; deduplicated (only fires once per cause unlock)
-- [ ] New file: `apps/mobile/lib/notifications.ts` — scheduling helpers
+- [x] **Build completed** — push when `build.completesAt` passes; copy: "Grover finished planting your tree! Check your grove."; tap → grove screen
+- [x] **Daily Sparks earned** — 8am push reporting yesterday's earnings if > 0; copy: "You earned 45 Sparks yesterday. Keep it up!"; tap → grove HUD
+- [x] **New cause affordable** — fires once when Spark balance crosses a cause threshold; copy: "You now have enough Sparks to fund ocean cleanup!"; tap → causes tab; deduplicated (only fires once per cause unlock)
+- [x] New file: `apps/mobile/lib/notifications.ts` — scheduling helpers
+- [x] New file: `apps/mobile/components/NotificationSync.tsx` — wires game state → notifications, handles tap navigation
 
 ---
 
 ## Payment / RevenueCat
 
+Tiers: **Free** (no donation) / **Planter** ($5/mo) / **Grower** ($10/mo) / **Guardian** ($20/mo)
+
+### Setup checklist (do once)
+- [ ] App Store Connect → My Apps → + → New App → bundle ID `com.tmoh.screenbank`
+- [ ] Monetization → In-App Purchases → create 3 Auto-Renewable Subscriptions in one Subscription Group ("ScreenBank"):
+  - `screenbank_planter_monthly` — Planter Monthly — $4.99
+  - `screenbank_grower_monthly` — Grower Monthly — $9.99
+  - `screenbank_guardian_monthly` — Guardian Monthly — $19.99
+- [ ] RevenueCat → Products: add the 3 product IDs (linked to iOS app)
+- [ ] RevenueCat → Entitlements: create `planter`, `grower`, `guardian`, attach matching product to each
+- [ ] RevenueCat → Offerings: create default offering with a package for each product
+- [ ] Grab RevenueCat public SDK key
+
+### Code
 - [ ] Install `react-native-purchases`
-- [ ] Configure 3 products in App Store Connect: `screenbank_base_monthly`, `screenbank_plus_monthly`, `screenbank_pro_monthly`
-- [ ] RevenueCat dashboard: map products → entitlements (`base`, `plus`, `pro`)
 - [ ] New file: `apps/mobile/lib/purchases.ts` — init, fetch offerings, purchase, restore
 - [ ] On purchase success → update `user_profiles.subscription_tier` in Supabase + local state
 - [ ] On app launch → restore purchases and sync tier to local state

@@ -78,13 +78,25 @@ cd apps/mobile
 npx expo install <package-name>
 ```
 
-### No Xcode installed
+### Testing
 
-Testing is done via **Expo Go** on a physical iPhone. Install Expo Go from the App Store, then scan the QR code from `npx expo start`.
+Testing is done via the **iOS Simulator** (Xcode is now installed). Run `npm run mobile` from the repo root, then press `i` to open in simulator.
+
+## Backlog
+
+**ALWAYS read `/Users/thomasmoh/Documents/Github/screenbank/BACKLOG.md` at the very start of every work session before doing anything else.** It is the source of truth for what's planned, prioritized, and in progress.
 
 ## Current Status
 
-Scaffold only — placeholder screens in place. No real screen time integration yet.
+Core app is built and running (auth, grove scene, causes, Sparks economy, Supabase DB). Screen Time API integration is in progress.
+
+### Screen Time API status
+
+- Apple Developer account purchased, **pending activation** (24–48h)
+- Native module (`modules/screen-time/`) is written and the Xcode project has the entitlements (`com.apple.developer.family-controls`, App Group `group.com.tmoh.screenbank`)
+- Authorization + daily monitoring schedule + budget-exceeded → Algorithm Raid + end-of-day Spark earning are all wired up in JS
+- **Still needs Xcode setup:** DeviceActivity Monitor Extension target (`ScreenTimeMonitor`) must be added manually in Xcode once the developer account is active
+- **Next step after account activates:** implement 10-minute threshold events to track `screenTimeUsedMinutes` in real time (DeviceActivity only exposes threshold crossings, not raw usage — plan is to set thresholds every 10 min up to the budget and use `lastCrossedMinutes` as an approximation). Test on device before finalizing.
 
 ## Solo Developer Notes
 

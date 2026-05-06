@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { ScreenTime, AuthorizationStatus } from '@/modules/screen-time/src/index';
 import { useGame } from '@/store/gameStore';
@@ -6,21 +6,29 @@ import { useGame } from '@/store/gameStore';
 /**
  * Handles the full screen time lifecycle:
  * 1. Requests authorization on first mount
- * 2. On each app foreground: checks for pending earned sparks and claims them
+ * 2. On each app foreground: claims pending earned sparks and triggers Algorithm raid if budget exceeded
  * 3. Exposes helpers for the settings screen (set budget, etc.)
  */
 export function useScreenTime() {
-  const { dispatch } = useGame();
+  const { state, dispatch } = useGame();
 
-  const claimPendingEarnings = useCallback(() => {
+  const algorithmActiveRef = useRef(state.algorithmActive);
+  useEffect(() => {
+    algorithmActiveRef.current = state.algorithmActive;
+  }, [state.algorithmActive]);
+
+  const claimPendingEarnings = useCallback(async () => {
     try {
-      const data = ScreenTime.getStoredData();
+      const data = await ScreenTime.getStoredData();
+      if (data.budgetExceeded && !algorithmActiveRef.current) {
+        dispatch({ type: 'ALGORITHM_RAID', minutesOver: 0 });
+      }
       if (data.pendingEarnedMinutes > 0) {
         dispatch({ type: 'EARN_SPARKS', sparks: data.pendingEarnedMinutes });
         ScreenTime.clearPendingEarnings();
       }
     } catch {
-      // Native module not available (e.g. in Expo Go or simulator without entitlement)
+      // Native module not available
     }
   }, [dispatch]);
 
@@ -36,7 +44,6 @@ export function useScreenTime() {
     }
   }, []);
 
-  // Claim any pending earnings every time the app comes to foreground
   useEffect(() => {
     claimPendingEarnings();
 

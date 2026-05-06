@@ -7,6 +7,13 @@ import { useEffect } from "react";
 import { GameProvider } from "@/store/gameStore";
 import { AuthProvider, useAuth } from "@/store/authStore";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { useScreenTime } from "@/hooks/useScreenTime";
+import NotificationSync from "@/components/NotificationSync";
+
+function ScreenTimeSync() {
+  useScreenTime();
+  return null;
+}
 
 function RootNavigator() {
   const { session, loading, budgetMinutes } = useAuth();
@@ -44,6 +51,8 @@ export default function RootLayout() {
         <AuthProvider>
           <GameProvider>
             <ThemeProvider>
+              <ScreenTimeSync />
+              <NotificationSync />
               <RootNavigator />
             </ThemeProvider>
           </GameProvider>
