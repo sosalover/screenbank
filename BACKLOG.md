@@ -58,6 +58,12 @@ Tiers: **Free** (no donation) / **Planter** ($5/mo) / **Grower** ($10/mo) / **Gu
 
 ---
 
+## Spark Earn Modal
+
+- [ ] When `EARN_SPARKS` is dispatched (on app foreground after midnight), show a full-screen or bottom-sheet celebration modal: "You earned X Sparks yesterday!" with the amount, a brief message from Grover, and a dismiss button. Only show if sparks > 0. Triggered in `claimPendingEarnings` after the dispatch.
+
+---
+
 ## Spark Education Touchpoints
 
 - [ ] **Tutorial step 1** — "Every minute you spend under your daily budget earns you 1 Spark. Sparks power Grover's builds."
@@ -79,6 +85,8 @@ Tiers: **Free** (no donation) / **Planter** ($5/mo) / **Grower** ($10/mo) / **Gu
 - [ ] Wire user's real budget from profile into `startMonitoring()` (currently hardcoded 180)
 - [ ] Verify Algorithm Raid triggers via `eventDidReachThreshold` when budget is hit
 - [ ] `spark_earnings` Supabase table — record daily earnings once real data flows
+- [ ] **Guard: no app selection** — on launch, if `debugSelectionLog` shows `apps:0 cat:0 domains:0`, prompt user to re-run the app picker before monitoring starts. A reinstall wipes the saved selection silently.
+- [ ] **Guard: auth reset after reinstall** — after reinstall, FamilyControls auth resets to `notDetermined` but `budgetMinutes` is still set in Supabase. The re-auth flow triggers but the saved app selection is gone. Need to detect this state (auth just re-approved + empty selection) and automatically prompt the picker.
 - [ ] **Screen time interpolation** — between threshold events, optimistically count down `screenTimeUsedMinutes` in the HUD using elapsed time since the last threshold crossed. Store `lastThresholdCrossedAt` timestamp alongside `screenTimeUsedMinutes` in UserDefaults; JS uses a timer to add `(now - lastThresholdCrossedAt)` seconds to the displayed value, capped at the next threshold boundary. Snaps to the real value when the next threshold fires.
 
 ---

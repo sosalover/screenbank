@@ -83,9 +83,9 @@ class ScreenTimeModule: NSObject {
     if let data = defaults?.data(forKey: "familyActivitySelection"),
        let stored = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) {
       selection = stored
-      print("[ScreenTime] selection loaded — apps:\(stored.applicationTokens.count) categories:\(stored.categoryTokens.count) domains:\(stored.webDomainTokens.count)")
+      defaults?.set("selection: apps:\(stored.applicationTokens.count) cat:\(stored.categoryTokens.count) domains:\(stored.webDomainTokens.count)", forKey: "debugSelectionLog")
     } else {
-      print("[ScreenTime] WARNING: no saved selection — monitoring nothing")
+      defaults?.set("WARNING: no saved selection", forKey: "debugSelectionLog")
     }
 
     let schedule = DeviceActivitySchedule(
@@ -110,13 +110,18 @@ class ScreenTimeModule: NSObject {
     print("[ScreenTime] thresholdInterval:\(thresholdInterval) events:\(events.count)")
 
     let center = DeviceActivityCenter()
-    do {
-      try center.startMonitoring(.daily, during: schedule, events: events)
-      print("[ScreenTime] startMonitoring OK — \(events.count) events, interval:\(thresholdInterval)min")
-      defaults?.set("startMonitoring OK — \(events.count) events, interval:\(thresholdInterval)min", forKey: "debugMainLog")
-    } catch {
-      print("[ScreenTime] startMonitoring ERROR: \(error)")
-      defaults?.set("startMonitoring ERROR: \(error)", forKey: "debugMainLog")
+    if center.activities.contains(.daily) {
+      print("[ScreenTime] already monitoring — skipping startMonitoring")
+      defaults?.set("already monitoring — skipped", forKey: "debugMainLog")
+    } else {
+      do {
+        try center.startMonitoring(.daily, during: schedule, events: events)
+        print("[ScreenTime] startMonitoring OK — \(events.count) events, interval:\(thresholdInterval)min")
+        defaults?.set("startMonitoring OK — \(events.count) events, interval:\(thresholdInterval)min", forKey: "debugMainLog")
+      } catch {
+        print("[ScreenTime] startMonitoring ERROR: \(error)")
+        defaults?.set("startMonitoring ERROR: \(error)", forKey: "debugMainLog")
+      }
     }
     resolve(true)
   }
@@ -131,14 +136,15 @@ class ScreenTimeModule: NSObject {
     rejecter reject: (String?, String?, Error?) -> Void
   ) {
     let defaults = UserDefaults(suiteName: APP_GROUP)
-    resolve([
-      "budgetMinutes":         defaults?.integer(forKey: "budgetMinutes") ?? 180,
-      "budgetExceeded":        defaults?.bool(forKey: "budgetExceeded") ?? false,
-      "pendingEarnedMinutes":  defaults?.integer(forKey: "pendingEarnedMinutes") ?? 0,
-      "screenTimeUsedMinutes": defaults?.integer(forKey: "screenTimeUsedMinutes") ?? 0,
-      "debugMainLog":          defaults?.string(forKey: "debugMainLog") ?? "",
-      "debugExtensionLog":     defaults?.string(forKey: "debugExtensionLog") ?? "",
-    ])
+    var result: [String: Any] = [:]
+    result["budgetMinutes"]         = defaults?.integer(forKey: "budgetMinutes") ?? 180
+    result["budgetExceeded"]        = defaults?.bool(forKey: "budgetExceeded") ?? false
+    result["pendingEarnedMinutes"]  = defaults?.integer(forKey: "pendingEarnedMinutes") ?? 0
+    result["screenTimeUsedMinutes"] = defaults?.integer(forKey: "screenTimeUsedMinutes") ?? 0
+    result["debugMainLog"]          = defaults?.string(forKey: "debugMainLog") ?? ""
+    result["debugExtensionLog"]     = defaults?.string(forKey: "debugExtensionLog") ?? ""
+    result["debugSelectionLog"]     = defaults?.string(forKey: "debugSelectionLog") ?? ""
+    resolve(result)
   }
 
   @objc func clearPendingEarnings() {

@@ -42,7 +42,10 @@ export function useScreenTime() {
       const status: AuthorizationStatus = await ScreenTime.requestAuthorization();
       if (status === 'approved') {
         await ScreenTime.presentAppPicker();
+        // Stop first so startMonitoring re-registers with the new app selection
+        ScreenTime.stopMonitoring();
         await ScreenTime.startMonitoring(budgetMinutes);
+        await claimPendingEarnings();
       }
       return status;
     } catch {
@@ -58,6 +61,15 @@ export function useScreenTime() {
         if (status === 'approved' && budgetMinutes) {
           const ok = await ScreenTime.startMonitoring(budgetMinutes);
           console.log('[ScreenTime] startMonitoring result:', ok, 'budget:', budgetMinutes);
+        } else if (status === 'notDetermined' && budgetMinutes) {
+          // Returning user (e.g. reinstall) — re-request auth and restart with existing selection
+          console.log('[ScreenTime] re-requesting auth for returning user...');
+          const newStatus = await ScreenTime.requestAuthorization();
+          console.log('[ScreenTime] re-auth result:', newStatus);
+          if (newStatus === 'approved') {
+            const ok = await ScreenTime.startMonitoring(budgetMinutes);
+            console.log('[ScreenTime] startMonitoring result:', ok, 'budget:', budgetMinutes);
+          }
         }
       } catch (e) {
         console.log('[ScreenTime] init error:', e);

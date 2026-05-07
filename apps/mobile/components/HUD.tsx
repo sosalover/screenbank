@@ -103,7 +103,7 @@ export default function HUD() {
         <StatCard
           icon="phone-portrait-outline"
           iconColor="#0369a1"
-          value={formatMinutes(minutesLeft)}
+          value={`~${formatMinutes(minutesLeft)}`}
           label="screen time left today"
           theme={theme}
         />
