@@ -8,6 +8,7 @@ export interface ScreenTimeData {
   budgetMinutes: number;
   budgetExceeded: boolean;
   pendingEarnedMinutes: number;
+  screenTimeUsedMinutes: number;
 }
 
 export const ScreenTime = {
@@ -16,6 +17,9 @@ export const ScreenTime = {
   },
   getAuthorizationStatus(): Promise<AuthorizationStatus> {
     return ScreenTimeNative.getAuthorizationStatus();
+  },
+  presentAppPicker(): Promise<boolean> {
+    return ScreenTimeNative.presentAppPicker();
   },
   startMonitoring(budgetMinutes: number): Promise<boolean> {
     return ScreenTimeNative.startMonitoring(budgetMinutes);

@@ -6,6 +6,7 @@ import { useAuth } from "@/store/authStore";
 import { useTheme } from "@/context/ThemeContext";
 import { AppTheme } from "@/constants/theme";
 import { useState } from "react";
+import { useScreenTime } from "@/hooks/useScreenTime";
 
 function formatDate(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -13,7 +14,8 @@ function formatDate(date: Date) {
 
 export default function AccountScreen() {
   const { state } = useGame();
-  const { signOut, displayName, setDisplayName } = useAuth();
+  const { signOut, displayName, setDisplayName, budgetMinutes } = useAuth();
+  const { requestAndSetup } = useScreenTime();
   const { theme } = useTheme();
   const s = makeStyles(theme);
   const [nameInput, setNameInput] = useState(displayName);
@@ -30,6 +32,12 @@ export default function AccountScreen() {
       { text: "Cancel", style: "cancel" },
       { text: "Sign out", style: "destructive", onPress: signOut },
     ]);
+  }
+
+  async function handleTestSetup() {
+    console.log('[ScreenTime] starting full setup (auth → picker → monitor)...');
+    const status = await requestAndSetup(budgetMinutes ?? 120);
+    console.log('[ScreenTime] setup complete, status:', status);
   }
   const { completedBuilds, activeBuilds } = state;
 
@@ -138,6 +146,11 @@ export default function AccountScreen() {
           ))
         )}
       </View>
+
+      {/* TEST: full screen time setup */}
+      <TouchableOpacity onPress={handleTestSetup} style={[s.signOutBtn, { backgroundColor: '#1d4ed8', marginBottom: 8 }]}>
+        <Text style={[s.signOutText, { color: '#fff' }]}>Setup Screen Time Monitoring</Text>
+      </TouchableOpacity>
 
       {/* Sign out */}
       <TouchableOpacity onPress={handleSignOut} style={s.signOutBtn}>

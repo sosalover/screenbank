@@ -2,15 +2,17 @@ import { useEffect, useCallback, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { ScreenTime, AuthorizationStatus } from '@/modules/screen-time/src/index';
 import { useGame } from '@/store/gameStore';
+import { useAuth } from '@/store/authStore';
 
 /**
  * Handles the full screen time lifecycle:
- * 1. Requests authorization on first mount
- * 2. On each app foreground: claims pending earned sparks and triggers Algorithm raid if budget exceeded
- * 3. Exposes helpers for the settings screen (set budget, etc.)
+ * 1. On each app foreground: syncs screenTimeUsedMinutes, claims pending sparks,
+ *    triggers Algorithm raid if budget exceeded
+ * 2. requestAndSetup: requests auth → shows app picker → starts monitoring
  */
 export function useScreenTime() {
   const { state, dispatch } = useGame();
+  const { budgetMinutes } = useAuth();
 
   const algorithmActiveRef = useRef(state.algorithmActive);
   useEffect(() => {
@@ -20,6 +22,8 @@ export function useScreenTime() {
   const claimPendingEarnings = useCallback(async () => {
     try {
       const data = await ScreenTime.getStoredData();
+      console.log('[ScreenTime] sync:', JSON.stringify(data));
+      dispatch({ type: 'SET_SCREEN_TIME_USED', usedMinutes: data.screenTimeUsedMinutes });
       if (data.budgetExceeded && !algorithmActiveRef.current) {
         dispatch({ type: 'ALGORITHM_RAID', minutesOver: 0 });
       }
@@ -32,10 +36,12 @@ export function useScreenTime() {
     }
   }, [dispatch]);
 
+  // Auth → app picker → start monitoring
   const requestAndSetup = useCallback(async (budgetMinutes = 180) => {
     try {
       const status: AuthorizationStatus = await ScreenTime.requestAuthorization();
       if (status === 'approved') {
+        await ScreenTime.presentAppPicker();
         await ScreenTime.startMonitoring(budgetMinutes);
       }
       return status;
@@ -45,10 +51,26 @@ export function useScreenTime() {
   }, []);
 
   useEffect(() => {
-    claimPendingEarnings();
+    async function init() {
+      try {
+        const status = await ScreenTime.getAuthorizationStatus();
+        console.log('[ScreenTime] auth status:', status, 'budget:', budgetMinutes);
+        if (status === 'approved' && budgetMinutes) {
+          const ok = await ScreenTime.startMonitoring(budgetMinutes);
+          console.log('[ScreenTime] startMonitoring result:', ok, 'budget:', budgetMinutes);
+        }
+      } catch (e) {
+        console.log('[ScreenTime] init error:', e);
+      }
+      claimPendingEarnings();
+    }
+    init();
 
     const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
-      if (state === 'active') claimPendingEarnings();
+      if (state === 'active') {
+        console.log('[ScreenTime] app foregrounded, claiming earnings...');
+        claimPendingEarnings();
+      }
     });
     return () => sub.remove();
   }, [claimPendingEarnings]);

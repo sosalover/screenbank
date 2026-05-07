@@ -69,10 +69,17 @@ Tiers: **Free** (no donation) / **Planter** ($5/mo) / **Grower** ($10/mo) / **Gu
 
 ## Screen Time API ⚠️ Blocks real Spark earning
 
-- [ ] Wire real iOS Screen Time data into `useScreenTime.ts` (native module exists at `modules/screen-time/`)
-- [ ] Replace mock `screenTimeUsedMinutes` with live data
-- [ ] Verify `EARN_SPARKS` dispatch fires correctly from real daily savings
-- [ ] `spark_earnings` Supabase table (migration already designed) — record daily earnings once real data flows
+- [x] Native module wired — uses RCT_EXTERN_MODULE bridge (ScreenTimeModule.swift + ScreenTimeBridge.m added directly to ScreenBank Xcode target)
+- [x] Authorization flow working — FamilyControls permission dialog appears and approves
+- [x] DeviceActivity monitoring starts on auth approval
+- [x] `eventDidReachThreshold` fires and writes `screenTimeUsedMinutes` to App Group UserDefaults
+- [x] `intervalDidEnd` fires at end of schedule and awards `budget - used` sparks as `pendingEarnedMinutes`
+- [x] JS claims pending sparks on foreground via `claimPendingEarnings`
+- [x] 20-event cap respected — threshold interval is `ceil(budget / 20)` minutes
+- [ ] Wire user's real budget from profile into `startMonitoring()` (currently hardcoded 180)
+- [ ] Verify Algorithm Raid triggers via `eventDidReachThreshold` when budget is hit
+- [ ] `spark_earnings` Supabase table — record daily earnings once real data flows
+- [ ] **Screen time interpolation** — between threshold events, optimistically count down `screenTimeUsedMinutes` in the HUD using elapsed time since the last threshold crossed. Store `lastThresholdCrossedAt` timestamp alongside `screenTimeUsedMinutes` in UserDefaults; JS uses a timer to add `(now - lastThresholdCrossedAt)` seconds to the displayed value, capped at the next threshold boundary. Snaps to the real value when the next threshold fires.
 
 ---
 
